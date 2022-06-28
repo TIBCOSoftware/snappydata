@@ -125,7 +125,7 @@ key-value stores, etc). Use <code>Dataset.writeStream</code> to access this.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="DefaultSnappySinkCallback.html"><span class="name">DefaultSnappySinkCallback</span></a><span class="result"> extends <a href="SnappySinkCallback.html" class="extype" name="org.apache.spark.sql.streaming.SnappySinkCallback">SnappySinkCallback</a> with <span class="extype" name="org.apache.spark.Logging">Logging</span></span>
+        <a href="DefaultSnappySinkCallback.html"><span class="name">DefaultSnappySinkCallback</span></a><span class="result"> extends <a href="SnappySinkCallback.html" class="extype" name="org.apache.spark.sql.streaming.SnappySinkCallback">SnappySinkCallback</a> with <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@DefaultSnappySinkCallbackextendsSnappySinkCallbackwithLogging" title="Permalink" target="_top">
@@ -142,7 +142,7 @@ key-value stores, etc). Use <code>Dataset.writeStream</code> to access this.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="DirectKafkaStreamRelation.html"><span class="name">DirectKafkaStreamRelation</span></a><span class="result"> extends <a href="StreamBaseRelation.html" class="extype" name="org.apache.spark.sql.streaming.StreamBaseRelation">StreamBaseRelation</a> with <span class="extype" name="org.apache.spark.Logging">Logging</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="DirectKafkaStreamRelation.html"><span class="name">DirectKafkaStreamRelation</span></a><span class="result"> extends <a href="StreamBaseRelation.html" class="extype" name="org.apache.spark.sql.streaming.StreamBaseRelation">StreamBaseRelation</a> with <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@DirectKafkaStreamRelationextendsStreamBaseRelationwithLoggingwithSerializable" title="Permalink" target="_top">
@@ -361,7 +361,7 @@ df.write.trigger(ProcessingTime.create(<span class="num">10</span>, TimeUnit.SEC
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="RabbitMQReceiver.html"><span class="name">RabbitMQReceiver</span></a><span class="tparams">[<span name="T">T</span>, <span name="D">D</span>]</span><span class="result"> extends <a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a>[<span class="extype" name="org.apache.spark.sql.streaming.RabbitMQReceiver.T">T</span>] with <span class="extype" name="org.apache.spark.Logging">Logging</span></span>
+        <a href="RabbitMQReceiver.html"><span class="name">RabbitMQReceiver</span></a><span class="tparams">[<span name="T">T</span>, <span name="D">D</span>]</span><span class="result"> extends <a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a>[<span class="extype" name="org.apache.spark.sql.streaming.RabbitMQReceiver.T">T</span>] with <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@RabbitMQReceiver[T,D]extendsReceiver[T]withLogging" title="Permalink" target="_top">
@@ -534,7 +534,7 @@ class needs to be passed against <code>sinkCallback</code> option while defining
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="SnappyStoreSink.html"><span class="name">SnappyStoreSink</span></a><span class="params">(<span name="snappySession">snappySession: <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="parameters">parameters: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="sinkCallback">sinkCallback: <a href="SnappySinkCallback.html" class="extype" name="org.apache.spark.sql.streaming.SnappySinkCallback">SnappySinkCallback</a></span>)</span><span class="result"> extends <a href="../execution/streaming/Sink.html" class="extype" name="org.apache.spark.sql.execution.streaming.Sink">Sink</a> with <span class="extype" name="org.apache.spark.Logging">Logging</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="SnappyStoreSink.html"><span class="name">SnappyStoreSink</span></a><span class="params">(<span name="snappySession">snappySession: <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="parameters">parameters: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="sinkCallback">sinkCallback: <a href="SnappySinkCallback.html" class="extype" name="org.apache.spark.sql.streaming.SnappySinkCallback">SnappySinkCallback</a></span>)</span><span class="result"> extends <a href="../execution/streaming/Sink.html" class="extype" name="org.apache.spark.sql.execution.streaming.Sink">Sink</a> with <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@SnappyStoreSinkextendsSinkwithLoggingwithProductwithSerializable" title="Permalink" target="_top">
@@ -722,7 +722,7 @@ Information about updates made to stateful operators in a <a href="StreamingQuer
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="StreamBaseRelation.html"><span class="name">StreamBaseRelation</span></a><span class="result"> extends <a href="../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a> with <a href="../sources/DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a> with <a href="StreamPlan.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlan">StreamPlan</a> with <a href="../sources/TableScan.html" class="extype" name="org.apache.spark.sql.sources.TableScan">TableScan</a> with <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="org.apache.spark.Logging">Logging</span></span>
+        <a href="StreamBaseRelation.html"><span class="name">StreamBaseRelation</span></a><span class="result"> extends <a href="../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a> with <a href="../sources/DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a> with <a href="StreamPlan.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlan">StreamPlan</a> with <a href="../sources/TableScan.html" class="extype" name="org.apache.spark.sql.sources.TableScan">TableScan</a> with <span class="extype" name="scala.Serializable">Serializable</span> with <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@StreamBaseRelationextendsBaseRelationwithDestroyRelationwithStreamPlanwithTableScanwithSerializablewithLogging" title="Permalink" target="_top">

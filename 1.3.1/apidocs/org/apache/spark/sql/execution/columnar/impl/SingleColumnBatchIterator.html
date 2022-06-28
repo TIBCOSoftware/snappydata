@@ -52,7 +52,7 @@
           <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Provides a ColumnBatchIterator over a single column batch for <span class="extype" name="ColumnTableScan">ColumnTableScan</span>.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="../ColumnBatchIterator.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatchIterator">ColumnBatchIterator</a>, <a href="../../row/PRValuesIterator.html" class="extype" name="org.apache.spark.sql.execution.row.PRValuesIterator">PRValuesIterator</a>[<span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span>], <span class="extype" name="org.apache.spark.sql.execution.BucketsBasedIterator">BucketsBasedIterator</span>, <span class="extype" name="scala.collection.Iterator">Iterator</span>[<span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span>], <span class="extype" name="scala.collection.TraversableOnce">TraversableOnce</span>[<span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span>], <span class="extype" name="scala.collection.GenTraversableOnce">GenTraversableOnce</span>[<span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span>], <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../ColumnBatchIterator.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatchIterator">ColumnBatchIterator</a>, <a href="../../row/PRValuesIterator.html" class="extype" name="org.apache.spark.sql.execution.row.PRValuesIterator">PRValuesIterator</a>[<span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span>], <a href="../../BucketsBasedIterator.html" class="extype" name="org.apache.spark.sql.execution.BucketsBasedIterator">BucketsBasedIterator</a>, <span class="extype" name="scala.collection.Iterator">Iterator</span>[<span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span>], <span class="extype" name="scala.collection.TraversableOnce">TraversableOnce</span>[<span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span>], <span class="extype" name="scala.collection.GenTraversableOnce">GenTraversableOnce</span>[<span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span>], <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -98,7 +98,7 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">SingleColumnBatchIterator</span><span class="params">(<span name="statsKey">statsKey: <span class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatKey">ColumnFormatKey</span></span>, <span name="bucket">bucket: <span class="extype" name="com.gemstone.gemfire.internal.cache.BucketRegion">BucketRegion</span></span>)</span>
+        <span class="name">SingleColumnBatchIterator</span><span class="params">(<span name="statsKey">statsKey: <a href="ColumnFormatKey.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatKey">ColumnFormatKey</a></span>, <span name="bucket">bucket: <span class="extype" name="com.gemstone.gemfire.internal.cache.BucketRegion">BucketRegion</span></span>)</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.SingleColumnBatchIterator@&lt;init&gt;(statsKey:org.apache.spark.sql.execution.columnar.impl.ColumnFormatKey,bucket:com.gemstone.gemfire.internal.cache.BucketRegion):org.apache.spark.sql.execution.columnar.impl.SingleColumnBatchIterator" title="Permalink" target="_top">
@@ -348,7 +348,7 @@
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">batch</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</span></span>
+        <span class="name">batch</span><span class="result">: <a href="../ColumnBatch.html" class="extype" name="org.apache.spark.sql.execution.columnar.ColumnBatch">ColumnBatch</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.SingleColumnBatchIterator@batch:org.apache.spark.sql.execution.columnar.ColumnBatch" title="Permalink" target="_top">
@@ -612,7 +612,7 @@
         <span class="kind">var</span>
       </span>
       <span class="symbol">
-        <span class="name">currentColumns</span><span class="result">: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<span class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</span>]</span>
+        <span class="name">currentColumns</span><span class="result">: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<a href="ColumnFormatValue.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue">ColumnFormatValue</a>]</span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.SingleColumnBatchIterator@currentColumns:scala.collection.mutable.ArrayBuffer[org.apache.spark.sql.execution.columnar.impl.ColumnFormatValue]" title="Permalink" target="_top">
@@ -999,7 +999,7 @@
         <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../row/PRValuesIterator.html" class="extype" name="org.apache.spark.sql.execution.row.PRValuesIterator">PRValuesIterator</a> → BucketsBasedIterator</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../row/PRValuesIterator.html" class="extype" name="org.apache.spark.sql.execution.row.PRValuesIterator">PRValuesIterator</a> → <a href="../../BucketsBasedIterator.html" class="extype" name="org.apache.spark.sql.execution.BucketsBasedIterator">BucketsBasedIterator</a></dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -1094,7 +1094,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getDeletedColumnDecoder</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDecoder">ColumnDeleteDecoder</span></span>
+        <span class="name">getDeletedColumnDecoder</span><span class="result">: <a href="../encoding/ColumnDeleteDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDecoder">ColumnDeleteDecoder</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.SingleColumnBatchIterator@getDeletedColumnDecoder:org.apache.spark.sql.execution.columnar.encoding.ColumnDeleteDecoder" title="Permalink" target="_top">
@@ -1128,7 +1128,7 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getUpdatedColumnDecoder</span><span class="params">(<span name="decoder">decoder: <span class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</span></span>, <span name="field">field: <a href="../../../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>, <span name="columnIndex">columnIndex: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.encoding.UpdatedColumnDecoderBase">UpdatedColumnDecoderBase</span></span>
+        <span class="name">getUpdatedColumnDecoder</span><span class="params">(<span name="decoder">decoder: <a href="../encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></span>, <span name="field">field: <a href="../../../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>, <span name="columnIndex">columnIndex: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../encoding/UpdatedColumnDecoderBase.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.UpdatedColumnDecoderBase">UpdatedColumnDecoderBase</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.execution.columnar.impl.SingleColumnBatchIterator@getUpdatedColumnDecoder(decoder:org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder,field:org.apache.spark.sql.types.StructField,columnIndex:Int):org.apache.spark.sql.execution.columnar.encoding.UpdatedColumnDecoderBase" title="Permalink" target="_top">
@@ -2358,7 +2358,7 @@
             </div><div class="parent" name="org.apache.spark.sql.execution.row.PRValuesIterator">
               <h3>Inherited from <a href="../../row/PRValuesIterator.html" class="extype" name="org.apache.spark.sql.execution.row.PRValuesIterator">PRValuesIterator</a>[<span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span>]</h3>
             </div><div class="parent" name="org.apache.spark.sql.execution.BucketsBasedIterator">
-              <h3>Inherited from <span class="extype" name="org.apache.spark.sql.execution.BucketsBasedIterator">BucketsBasedIterator</span></h3>
+              <h3>Inherited from <a href="../../BucketsBasedIterator.html" class="extype" name="org.apache.spark.sql.execution.BucketsBasedIterator">BucketsBasedIterator</a></h3>
             </div><div class="parent" name="scala.collection.Iterator">
               <h3>Inherited from <span class="extype" name="scala.collection.Iterator">Iterator</span>[<span class="extype" name="java.nio.ByteBuffer">ByteBuffer</span>]</h3>
             </div><div class="parent" name="scala.collection.TraversableOnce">

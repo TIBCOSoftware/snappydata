@@ -339,6 +339,26 @@ can submit jobs for execution.
                 <span class="name">@<a href="annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
               
         </dd></dl></div>
+    </li><li name="org.apache.spark.Logging" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="LoggingextendsAnyRef"></a>
+      <a id="Logging:Logging"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Logging.html"><span class="name">Logging</span></a><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#org.apache.spark.package@LoggingextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Utility trait for classes that want to log data.</p><div class="fullcomment"><div class="comment cmt"><p>Utility trait for classes that want to log data. Creates an SLF4J logger
+for the class and allows logging messages at different levels using methods
+that only evaluate parameters lazily if the log level is enabled.
+</p></div></div>
     </li><li name="org.apache.spark.NarrowDependency" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
       <a id="NarrowDependency[T]extendsDependency[T]"></a>
       <a id="NarrowDependency[T]:NarrowDependency[T]"></a>
@@ -576,7 +596,7 @@ count, collect, reduce.
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="SparkConf.html"><span class="name">SparkConf</span></a><span class="result"> extends <span class="extype" name="scala.Cloneable">Cloneable</span> with <span class="extype" name="org.apache.spark.Logging">Logging</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="SparkConf.html"><span class="name">SparkConf</span></a><span class="result"> extends <span class="extype" name="scala.Cloneable">Cloneable</span> with <a href="Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../index.html#org.apache.spark.package@SparkConfextendsCloneablewithLoggingwithSerializable" title="Permalink" target="_top">
@@ -599,7 +619,7 @@ by the user. Spark does not support modifying the configuration at runtime.</p><
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="SparkContext.html"><span class="name">SparkContext</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.Logging">Logging</span></span>
+        <a href="SparkContext.html"><span class="name">SparkContext</span></a><span class="result"> extends <a href="Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../index.html#org.apache.spark.package@SparkContextextendsLogging" title="Permalink" target="_top">
@@ -619,7 +639,7 @@ creating a new one.  This limitation may eventually be removed; see SPARK-2243 f
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="SparkEnv.html"><span class="name">SparkEnv</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.Logging">Logging</span></span>
+        <a href="SparkEnv.html"><span class="name">SparkEnv</span></a><span class="result"> extends <a href="Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../index.html#org.apache.spark.package@SparkEnvextendsLogging" title="Permalink" target="_top">
@@ -1164,7 +1184,7 @@ the variables are private[spark]
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="SparkContext$.html"><span class="name">SparkContext</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.Logging">Logging</span></span>
+        <a href="SparkContext$.html"><span class="name">SparkContext</span></a><span class="result"> extends <a href="Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../index.html#org.apache.spark.package@SparkContext" title="Permalink" target="_top">
@@ -1182,7 +1202,7 @@ various Spark features.</p>
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="SparkEnv$.html"><span class="name">SparkEnv</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.Logging">Logging</span></span>
+        <a href="SparkEnv$.html"><span class="name">SparkEnv</span></a><span class="result"> extends <a href="Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../index.html#org.apache.spark.package@SparkEnv" title="Permalink" target="_top">

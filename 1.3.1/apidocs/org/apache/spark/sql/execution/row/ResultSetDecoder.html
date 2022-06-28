@@ -45,7 +45,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">ResultSetDecoder</span><span class="result"> extends <span class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</span></span>
+        <span class="name">ResultSetDecoder</span><span class="result"> extends <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></span>
       </span>
       </h4>
       
@@ -53,7 +53,7 @@
 generated code can be used for both row buffer and column data access.
 </p></div><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</span>, <span class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">ColumnEncoding</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a>, <a href="../columnar/encoding/ColumnEncoding.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">ColumnEncoding</a>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -200,7 +200,7 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd>ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -240,7 +240,9 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ColumnDecoder</dd></dl></div>
+      <p class="shortcomment cmt">Close and relinquish all resources of this decoder.</p><div class="fullcomment"><div class="comment cmt"><p>Close and relinquish all resources of this decoder.
+The decoder may no longer be usable after this call.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder#currentCursor" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="currentCursor:Long"></a>
       <a id="currentCursor:Long"></a>
@@ -257,7 +259,7 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>ColumnDecoder</dd></dl></div>
+      <p class="shortcomment cmt">Used by some decoders to track the current sequential cursor.</p><div class="fullcomment"><div class="comment cmt"><p>Used by some decoders to track the current sequential cursor.</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -331,7 +333,8 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → ColumnDecoder</dd></dl></div>
+      <p class="shortcomment cmt">Fetch next null position and return it as returned by <a href="#getNextNullPosition:Int" class="extmbr" name="org.apache.spark.sql.execution.row.ResultSetDecoder#getNextNullPosition">getNextNullPosition</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Fetch next null position and return it as returned by <a href="#getNextNullPosition:Int" class="extmbr" name="org.apache.spark.sql.execution.row.ResultSetDecoder#getNextNullPosition">getNextNullPosition</a>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -365,7 +368,8 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → ColumnDecoder</dd></dl></div>
+      <p class="shortcomment cmt">Return the next position of a null value.</p><div class="fullcomment"><div class="comment cmt"><p>Return the next position of a null value.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder#getStringDictionary" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getStringDictionary:org.apache.spark.sql.execution.columnar.encoding.StringDictionary"></a>
       <a id="getStringDictionary:StringDictionary"></a>
@@ -375,14 +379,14 @@ generated code can be used for both row buffer and column data access.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getStringDictionary</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.encoding.StringDictionary">StringDictionary</span></span>
+        <span class="name">getStringDictionary</span><span class="result">: <a href="../columnar/encoding/StringDictionary.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.StringDictionary">StringDictionary</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.ResultSetDecoder@getStringDictionary:org.apache.spark.sql.execution.columnar.encoding.StringDictionary" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.ResultSetDecoder#hasNulls" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hasNulls:Boolean"></a>
       <a id="hasNulls:Boolean"></a>
@@ -399,7 +403,7 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -433,7 +437,7 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.ResultSetDecoder#initializeNulls" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="initializeNulls(columnBytes:AnyRef,startCursor:Long,field:org.apache.spark.sql.types.StructField):Long"></a>
       <a id="initializeNulls(AnyRef,Long,StructField):Long"></a>
@@ -450,7 +454,7 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -484,7 +488,7 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → ColumnDecoder</dd></dl></div>
+      <p class="shortcomment cmt">Absolute position null check for random access.</p><div class="fullcomment"><div class="comment cmt"><p>Absolute position null check for random access.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -518,7 +522,11 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd>ColumnDecoder</dd></dl></div>
+      <p class="shortcomment cmt">Not used by decoders themselves but by delta writer that stores the
+current nonNullPosition for the decoder.</p><div class="fullcomment"><div class="comment cmt"><p>Not used by decoders themselves but by delta writer that stores the
+current nonNullPosition for the decoder.
+Initialized to -1 so that first increment starts at 0.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <a id="notify():Unit"></a>
@@ -569,7 +577,8 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → ColumnDecoder</dd></dl></div>
+      <p class="shortcomment cmt">Return the number of nulls till given ordinal given previous result.</p><div class="fullcomment"><div class="comment cmt"><p>Return the number of nulls till given ordinal given previous result.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.ResultSetDecoder#readArray" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readArray(columnBytes:AnyRef,nonNullPosition:Int):org.apache.spark.sql.catalyst.util.SerializedArray"></a>
       <a id="readArray(AnyRef,Int):SerializedArray"></a>
@@ -579,14 +588,14 @@ generated code can be used for both row buffer and column data access.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">readArray</span><span class="params">(<span name="columnBytes">columnBytes: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="nonNullPosition">nonNullPosition: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.util.SerializedArray">SerializedArray</span></span>
+        <span class="name">readArray</span><span class="params">(<span name="columnBytes">columnBytes: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="nonNullPosition">nonNullPosition: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../../catalyst/util/SerializedArray.html" class="extype" name="org.apache.spark.sql.catalyst.util.SerializedArray">SerializedArray</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.ResultSetDecoder@readArray(columnBytes:AnyRef,nonNullPosition:Int):org.apache.spark.sql.catalyst.util.SerializedArray" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.ResultSetDecoder#readBinary" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readBinary(columnBytes:AnyRef,nonNullPosition:Int):Array[Byte]"></a>
       <a id="readBinary(AnyRef,Int):Array[Byte]"></a>
@@ -603,7 +612,7 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.ResultSetDecoder#readBoolean" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readBoolean(columnBytes:AnyRef,nonNullPosition:Int):Boolean"></a>
       <a id="readBoolean(AnyRef,Int):Boolean"></a>
@@ -620,7 +629,7 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.ResultSetDecoder#readByte" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readByte(columnBytes:AnyRef,nonNullPosition:Int):Byte"></a>
       <a id="readByte(AnyRef,Int):Byte"></a>
@@ -637,7 +646,7 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.ResultSetDecoder#readDate" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readDate(columnBytes:AnyRef,nonNullPosition:Int):Int"></a>
       <a id="readDate(AnyRef,Int):Int"></a>
@@ -654,7 +663,7 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.ResultSetDecoder#readDecimal" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readDecimal(columnBytes:AnyRef,precision:Int,scale:Int,nonNullPosition:Int):org.apache.spark.sql.types.Decimal"></a>
       <a id="readDecimal(AnyRef,Int,Int,Int):Decimal"></a>
@@ -671,7 +680,7 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder#readDictionaryIndex" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readDictionaryIndex(columnBytes:AnyRef,nonNullPosition:Int):Int"></a>
       <a id="readDictionaryIndex(AnyRef,Int):Int"></a>
@@ -688,7 +697,7 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.ResultSetDecoder#readDouble" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readDouble(columnBytes:AnyRef,nonNullPosition:Int):Double"></a>
       <a id="readDouble(AnyRef,Int):Double"></a>
@@ -705,7 +714,7 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.ResultSetDecoder#readFloat" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readFloat(columnBytes:AnyRef,nonNullPosition:Int):Float"></a>
       <a id="readFloat(AnyRef,Int):Float"></a>
@@ -722,7 +731,7 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.ResultSetDecoder#readInt" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readInt(columnBytes:AnyRef,nonNullPosition:Int):Int"></a>
       <a id="readInt(AnyRef,Int):Int"></a>
@@ -739,7 +748,7 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.ResultSetDecoder#readInterval" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readInterval(columnBytes:AnyRef,nonNullPosition:Int):org.apache.spark.unsafe.types.CalendarInterval"></a>
       <a id="readInterval(AnyRef,Int):CalendarInterval"></a>
@@ -756,7 +765,7 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.ResultSetDecoder#readLong" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readLong(columnBytes:AnyRef,nonNullPosition:Int):Long"></a>
       <a id="readLong(AnyRef,Int):Long"></a>
@@ -773,7 +782,7 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.ResultSetDecoder#readLongDecimal" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readLongDecimal(columnBytes:AnyRef,precision:Int,scale:Int,nonNullPosition:Int):org.apache.spark.sql.types.Decimal"></a>
       <a id="readLongDecimal(AnyRef,Int,Int,Int):Decimal"></a>
@@ -790,7 +799,7 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.ResultSetDecoder#readMap" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readMap(columnBytes:AnyRef,nonNullPosition:Int):org.apache.spark.sql.catalyst.util.SerializedMap"></a>
       <a id="readMap(AnyRef,Int):SerializedMap"></a>
@@ -800,14 +809,14 @@ generated code can be used for both row buffer and column data access.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">readMap</span><span class="params">(<span name="columnBytes">columnBytes: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="nonNullPosition">nonNullPosition: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.util.SerializedMap">SerializedMap</span></span>
+        <span class="name">readMap</span><span class="params">(<span name="columnBytes">columnBytes: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="nonNullPosition">nonNullPosition: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../../catalyst/util/SerializedMap.html" class="extype" name="org.apache.spark.sql.catalyst.util.SerializedMap">SerializedMap</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.ResultSetDecoder@readMap(columnBytes:AnyRef,nonNullPosition:Int):org.apache.spark.sql.catalyst.util.SerializedMap" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.ResultSetDecoder#readShort" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readShort(columnBytes:AnyRef,nonNullPosition:Int):Short"></a>
       <a id="readShort(AnyRef,Int):Short"></a>
@@ -824,7 +833,7 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.ResultSetDecoder#readStruct" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readStruct(columnBytes:AnyRef,numFields:Int,nonNullPosition:Int):org.apache.spark.sql.catalyst.util.SerializedRow"></a>
       <a id="readStruct(AnyRef,Int,Int):SerializedRow"></a>
@@ -834,14 +843,14 @@ generated code can be used for both row buffer and column data access.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">readStruct</span><span class="params">(<span name="columnBytes">columnBytes: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="numFields">numFields: <span class="extype" name="scala.Int">Int</span></span>, <span name="nonNullPosition">nonNullPosition: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.util.SerializedRow">SerializedRow</span></span>
+        <span class="name">readStruct</span><span class="params">(<span name="columnBytes">columnBytes: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="numFields">numFields: <span class="extype" name="scala.Int">Int</span></span>, <span name="nonNullPosition">nonNullPosition: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../../catalyst/util/SerializedRow.html" class="extype" name="org.apache.spark.sql.catalyst.util.SerializedRow">SerializedRow</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.ResultSetDecoder@readStruct(columnBytes:AnyRef,numFields:Int,nonNullPosition:Int):org.apache.spark.sql.catalyst.util.SerializedRow" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.ResultSetDecoder#readTimestamp" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readTimestamp(columnBytes:AnyRef,nonNullPosition:Int):Long"></a>
       <a id="readTimestamp(AnyRef,Int):Long"></a>
@@ -858,7 +867,7 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.ResultSetDecoder#readUTF8String" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readUTF8String(columnBytes:AnyRef,nonNullPosition:Int):org.apache.spark.unsafe.types.UTF8String"></a>
       <a id="readUTF8String(AnyRef,Int):UTF8String"></a>
@@ -875,7 +884,7 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.ResultSetDecoder#supports" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="supports(dataType:org.apache.spark.sql.types.DataType):Boolean"></a>
       <a id="supports(DataType):Boolean"></a>
@@ -892,7 +901,7 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → ColumnEncoding</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → <a href="../columnar/encoding/ColumnEncoding.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">ColumnEncoding</a></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -943,7 +952,7 @@ generated code can be used for both row buffer and column data access.
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → ColumnEncoding</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.ResultSetDecoder">ResultSetDecoder</a> → <a href="../columnar/encoding/ColumnEncoding.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">ColumnEncoding</a></dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>
@@ -1023,9 +1032,9 @@ generated code can be used for both row buffer and column data access.
 
         <div id="inheritedMembers">
         <div class="parent" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">
-              <h3>Inherited from <span class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</span></h3>
+              <h3>Inherited from <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">
-              <h3>Inherited from <span class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">ColumnEncoding</span></h3>
+              <h3>Inherited from <a href="../columnar/encoding/ColumnEncoding.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">ColumnEncoding</a></h3>
             </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">

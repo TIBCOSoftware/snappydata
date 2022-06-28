@@ -45,13 +45,13 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">UnsafeRowDecoder</span><span class="result"> extends <span class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</span></span>
+        <span class="name">UnsafeRowDecoder</span><span class="result"> extends <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></span>
       </span>
       </h4>
       
           <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><span class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</span>, <span class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">ColumnEncoding</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a>, <a href="../columnar/encoding/ColumnEncoding.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">ColumnEncoding</a>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -198,7 +198,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd>ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -238,7 +238,9 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ColumnDecoder</dd></dl></div>
+      <p class="shortcomment cmt">Close and relinquish all resources of this decoder.</p><div class="fullcomment"><div class="comment cmt"><p>Close and relinquish all resources of this decoder.
+The decoder may no longer be usable after this call.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder#currentCursor" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="currentCursor:Long"></a>
       <a id="currentCursor:Long"></a>
@@ -255,7 +257,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>ColumnDecoder</dd></dl></div>
+      <p class="shortcomment cmt">Used by some decoders to track the current sequential cursor.</p><div class="fullcomment"><div class="comment cmt"><p>Used by some decoders to track the current sequential cursor.</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -329,7 +331,8 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → ColumnDecoder</dd></dl></div>
+      <p class="shortcomment cmt">Fetch next null position and return it as returned by <a href="#getNextNullPosition:Int" class="extmbr" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder#getNextNullPosition">getNextNullPosition</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Fetch next null position and return it as returned by <a href="#getNextNullPosition:Int" class="extmbr" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder#getNextNullPosition">getNextNullPosition</a>.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getClass():Class[_]"></a>
       <a id="getClass():Class[_]"></a>
@@ -363,7 +366,8 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → ColumnDecoder</dd></dl></div>
+      <p class="shortcomment cmt">Return the next position of a null value.</p><div class="fullcomment"><div class="comment cmt"><p>Return the next position of a null value.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder#getStringDictionary" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getStringDictionary:org.apache.spark.sql.execution.columnar.encoding.StringDictionary"></a>
       <a id="getStringDictionary:StringDictionary"></a>
@@ -373,14 +377,14 @@
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getStringDictionary</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.columnar.encoding.StringDictionary">StringDictionary</span></span>
+        <span class="name">getStringDictionary</span><span class="result">: <a href="../columnar/encoding/StringDictionary.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.StringDictionary">StringDictionary</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.UnsafeRowDecoder@getStringDictionary:org.apache.spark.sql.execution.columnar.encoding.StringDictionary" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.UnsafeRowDecoder#hasNulls" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hasNulls:Boolean"></a>
       <a id="hasNulls:Boolean"></a>
@@ -397,7 +401,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -431,7 +435,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.UnsafeRowDecoder#initializeNulls" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="initializeNulls(columnBytes:AnyRef,startCursor:Long,field:org.apache.spark.sql.types.StructField):Long"></a>
       <a id="initializeNulls(AnyRef,Long,StructField):Long"></a>
@@ -448,7 +452,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="isInstanceOf[T0]:Boolean"></a>
       <a id="isInstanceOf[T0]:Boolean"></a>
@@ -482,7 +486,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → ColumnDecoder</dd></dl></div>
+      <p class="shortcomment cmt">Absolute position null check for random access.</p><div class="fullcomment"><div class="comment cmt"><p>Absolute position null check for random access.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="ne(x$1:AnyRef):Boolean"></a>
       <a id="ne(AnyRef):Boolean"></a>
@@ -516,7 +520,11 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd>ColumnDecoder</dd></dl></div>
+      <p class="shortcomment cmt">Not used by decoders themselves but by delta writer that stores the
+current nonNullPosition for the decoder.</p><div class="fullcomment"><div class="comment cmt"><p>Not used by decoders themselves but by delta writer that stores the
+current nonNullPosition for the decoder.
+Initialized to -1 so that first increment starts at 0.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd><dt>Definition Classes</dt><dd><a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <a id="notify():Unit"></a>
@@ -567,7 +575,8 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → ColumnDecoder</dd></dl></div>
+      <p class="shortcomment cmt">Return the number of nulls till given ordinal given previous result.</p><div class="fullcomment"><div class="comment cmt"><p>Return the number of nulls till given ordinal given previous result.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.UnsafeRowDecoder#readArray" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readArray(columnBytes:AnyRef,nonNullPosition:Int):org.apache.spark.sql.catalyst.util.ArrayData"></a>
       <a id="readArray(AnyRef,Int):ArrayData"></a>
@@ -584,7 +593,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.UnsafeRowDecoder#readBinary" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readBinary(columnBytes:AnyRef,nonNullPosition:Int):Array[Byte]"></a>
       <a id="readBinary(AnyRef,Int):Array[Byte]"></a>
@@ -601,7 +610,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.UnsafeRowDecoder#readBoolean" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readBoolean(columnBytes:AnyRef,nonNullPosition:Int):Boolean"></a>
       <a id="readBoolean(AnyRef,Int):Boolean"></a>
@@ -618,7 +627,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.UnsafeRowDecoder#readByte" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readByte(columnBytes:AnyRef,nonNullPosition:Int):Byte"></a>
       <a id="readByte(AnyRef,Int):Byte"></a>
@@ -635,7 +644,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder#readDate" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readDate(columnBytes:AnyRef,nonNullPosition:Int):Int"></a>
       <a id="readDate(AnyRef,Int):Int"></a>
@@ -652,7 +661,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.UnsafeRowDecoder#readDecimal" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readDecimal(columnBytes:AnyRef,precision:Int,scale:Int,nonNullPosition:Int):org.apache.spark.sql.types.Decimal"></a>
       <a id="readDecimal(AnyRef,Int,Int,Int):Decimal"></a>
@@ -669,9 +678,9 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder#readDictionaryIndex" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="readDictionaryIndex(columnBytes:&lt;?&gt;,nonNullPosition:&lt;?&gt;):Int"></a>
+      <a id="readDictionaryIndex(columnBytes:AnyRef,nonNullPosition:Int):Int"></a>
       <a id="readDictionaryIndex(AnyRef,Int):Int"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -686,7 +695,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.UnsafeRowDecoder#readDouble" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readDouble(columnBytes:AnyRef,nonNullPosition:Int):Double"></a>
       <a id="readDouble(AnyRef,Int):Double"></a>
@@ -703,7 +712,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.UnsafeRowDecoder#readFloat" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readFloat(columnBytes:AnyRef,nonNullPosition:Int):Float"></a>
       <a id="readFloat(AnyRef,Int):Float"></a>
@@ -720,7 +729,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.UnsafeRowDecoder#readInt" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readInt(columnBytes:AnyRef,nonNullPosition:Int):Int"></a>
       <a id="readInt(AnyRef,Int):Int"></a>
@@ -737,7 +746,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.UnsafeRowDecoder#readInterval" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readInterval(columnBytes:AnyRef,nonNullPosition:Int):org.apache.spark.unsafe.types.CalendarInterval"></a>
       <a id="readInterval(AnyRef,Int):CalendarInterval"></a>
@@ -754,7 +763,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.UnsafeRowDecoder#readLong" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readLong(columnBytes:AnyRef,nonNullPosition:Int):Long"></a>
       <a id="readLong(AnyRef,Int):Long"></a>
@@ -771,7 +780,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.UnsafeRowDecoder#readLongDecimal" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readLongDecimal(columnBytes:AnyRef,precision:Int,scale:Int,nonNullPosition:Int):org.apache.spark.sql.types.Decimal"></a>
       <a id="readLongDecimal(AnyRef,Int,Int,Int):Decimal"></a>
@@ -788,7 +797,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.UnsafeRowDecoder#readMap" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readMap(columnBytes:AnyRef,nonNullPosition:Int):org.apache.spark.sql.catalyst.util.MapData"></a>
       <a id="readMap(AnyRef,Int):MapData"></a>
@@ -805,7 +814,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.UnsafeRowDecoder#readShort" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readShort(columnBytes:AnyRef,nonNullPosition:Int):Short"></a>
       <a id="readShort(AnyRef,Int):Short"></a>
@@ -822,7 +831,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.UnsafeRowDecoder#readStruct" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readStruct(columnBytes:AnyRef,numFields:Int,nonNullPosition:Int):org.apache.spark.sql.catalyst.InternalRow"></a>
       <a id="readStruct(AnyRef,Int,Int):InternalRow"></a>
@@ -839,7 +848,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder#readTimestamp" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readTimestamp(columnBytes:AnyRef,nonNullPosition:Int):Long"></a>
       <a id="readTimestamp(AnyRef,Int):Long"></a>
@@ -856,7 +865,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.UnsafeRowDecoder#readUTF8String" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="readUTF8String(columnBytes:AnyRef,nonNullPosition:Int):org.apache.spark.unsafe.types.UTF8String"></a>
       <a id="readUTF8String(AnyRef,Int):UTF8String"></a>
@@ -873,7 +882,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → ColumnDecoder</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.row.UnsafeRowDecoder#supports" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="supports(dataType:org.apache.spark.sql.types.DataType):Boolean"></a>
       <a id="supports(DataType):Boolean"></a>
@@ -890,7 +899,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → ColumnEncoding</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → <a href="../columnar/encoding/ColumnEncoding.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">ColumnEncoding</a></dd></dl></div>
     </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
       <a id="synchronized[T0](⇒T0):T0"></a>
@@ -941,7 +950,7 @@
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → ColumnEncoding</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.UnsafeRowDecoder">UnsafeRowDecoder</a> → <a href="../columnar/encoding/ColumnEncoding.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">ColumnEncoding</a></dd></dl></div>
     </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="wait():Unit"></a>
       <a id="wait():Unit"></a>
@@ -1021,9 +1030,9 @@
 
         <div id="inheritedMembers">
         <div class="parent" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">
-              <h3>Inherited from <span class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</span></h3>
+              <h3>Inherited from <a href="../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></h3>
             </div><div class="parent" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">
-              <h3>Inherited from <span class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">ColumnEncoding</span></h3>
+              <h3>Inherited from <a href="../columnar/encoding/ColumnEncoding.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding">ColumnEncoding</a></h3>
             </div><div class="parent" name="scala.AnyRef">
               <h3>Inherited from <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
             </div><div class="parent" name="scala.Any">

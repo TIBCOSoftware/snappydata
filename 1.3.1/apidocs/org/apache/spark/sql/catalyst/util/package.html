@@ -224,6 +224,82 @@ and Khanna, Sanjeev. (http://dx.doi.org/10.1145/375663.375670)</p><p>In order to
 and only inserts them after crossing a certain size threshold. This guarantees a near-constant
 runtime complexity compared to the original algorithm.
 </p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.SerializedArray" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SerializedArrayextendsArrayDatawithSerializedRowData"></a>
+      <a id="SerializedArray:SerializedArray"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SerializedArray.html"><span class="name">SerializedArray</span></a><span class="result"> extends <a href="ArrayData.html" class="extype" name="org.apache.spark.sql.catalyst.util.ArrayData">ArrayData</a> with <a href="SerializedRowData.html" class="extype" name="org.apache.spark.sql.catalyst.util.SerializedRowData">SerializedRowData</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@SerializedArrayextendsArrayDatawithSerializedRowData" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An implementation of <a href="ArrayData.html" class="extype" name="org.apache.spark.sql.catalyst.util.ArrayData">ArrayData</a> serialized like a <code>SerializedRow</code>
+that pays attention to the platform endianness and uses a consistent
+endian format (little-endian) so is suitable for storage.</p>
+    </li><li name="org.apache.spark.sql.catalyst.util.SerializedMap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SerializedMapextendsMapDatawithExternalizablewithKryoSerializable"></a>
+      <a id="SerializedMap:SerializedMap"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SerializedMap.html"><span class="name">SerializedMap</span></a><span class="result"> extends <a href="MapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.MapData">MapData</a> with <span class="extype" name="java.io.Externalizable">Externalizable</span> with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@SerializedMapextendsMapDatawithExternalizablewithKryoSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An implementation of <a href="MapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.MapData">MapData</a> serialized like <code>SerializedRow</code> elements
+that pays attention to the platform endianness and uses a consistent endian
+format (little-endian) so is suitable for storage.</p>
+    </li><li name="org.apache.spark.sql.catalyst.util.SerializedRow" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SerializedRowextendsInternalRowwithSerializedRowData"></a>
+      <a id="SerializedRow:SerializedRow"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SerializedRow.html"><span class="name">SerializedRow</span></a><span class="result"> extends <a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a> with <a href="SerializedRowData.html" class="extype" name="org.apache.spark.sql.catalyst.util.SerializedRowData">SerializedRowData</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@SerializedRowextendsInternalRowwithSerializedRowData" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Like <span class="extype" name="UnsafeRow">UnsafeRow</span> uses raw memory bytes to encode the data in a row instead
+of objects.</p><div class="fullcomment"><div class="comment cmt"><p>Like <span class="extype" name="UnsafeRow">UnsafeRow</span> uses raw memory bytes to encode the data in a row instead
+of objects. The difference is that it pays attention to endianness to use a
+consistent endian format (little-endian) so is suitable for storage.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.SerializedRowData" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="SerializedRowDataextendsSpecializedGetterswithExternalizablewithKryoSerializable"></a>
+      <a id="SerializedRowData:SerializedRowData"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="SerializedRowData.html"><span class="name">SerializedRowData</span></a><span class="result"> extends <a href="../expressions/SpecializedGetters.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SpecializedGetters">SpecializedGetters</a> with <span class="extype" name="java.io.Externalizable">Externalizable</span> with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@SerializedRowDataextendsSpecializedGetterswithExternalizablewithKryoSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Contains the main code for <code>SerializedRow</code> and <code>SerializedArray</code>.</p>
     </li><li name="org.apache.spark.sql.catalyst.util.StringKeyHashMap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="StringKeyHashMap[T]extendsAnyRef"></a>
       <a id="StringKeyHashMap[T]:StringKeyHashMap[T]"></a>

@@ -170,7 +170,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="CachedDataFrame.html"><span class="name">CachedDataFrame</span></a><span class="result"> extends <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>] with <span class="extype" name="org.apache.spark.Logging">Logging</span></span>
+        <a href="CachedDataFrame.html"><span class="name">CachedDataFrame</span></a><span class="result"> extends <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<a href="Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>] with <a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.sql.package@CachedDataFrameextendsDataset[org.apache.spark.sql.Row]withLogging" title="Permalink" target="_top">
@@ -1281,7 +1281,7 @@ val snc: SnappyContext = SnappyContext.getOrCreate(sparkContext)
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <a href="SnappyDDLParser.html"><span class="name">SnappyDDLParser</span></a><span class="result"> extends <a href="SnappyBaseParser.html" class="extype" name="org.apache.spark.sql.SnappyBaseParser">SnappyBaseParser</a> with <span class="extype" name="org.apache.spark.Logging">Logging</span></span>
+        <a href="SnappyDDLParser.html"><span class="name">SnappyDDLParser</span></a><span class="result"> extends <a href="SnappyBaseParser.html" class="extype" name="org.apache.spark.sql.SnappyBaseParser">SnappyBaseParser</a> with <a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.sql.package@SnappyDDLParserextendsSnappyBaseParserwithLogging" title="Permalink" target="_top">
@@ -1646,7 +1646,7 @@ To create a <a href="TypedColumn.html" class="extype" name="org.apache.spark.sql
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="CachedDataFrame$.html"><span class="name">CachedDataFrame</span></a><span class="result"> extends (<a href="../TaskContext.html" class="extype" name="org.apache.spark.TaskContext">TaskContext</a>, <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>], <span class="extype" name="scala.Long">Long</span>) ⇒ <a href="PartitionResult.html" class="extype" name="org.apache.spark.sql.PartitionResult">PartitionResult</a> with <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span> with <span class="extype" name="org.apache.spark.Logging">Logging</span></span>
+        <a href="CachedDataFrame$.html"><span class="name">CachedDataFrame</span></a><span class="result"> extends (<a href="../TaskContext.html" class="extype" name="org.apache.spark.TaskContext">TaskContext</a>, <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<a href="catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>], <span class="extype" name="scala.Long">Long</span>) ⇒ <a href="PartitionResult.html" class="extype" name="org.apache.spark.sql.PartitionResult">PartitionResult</a> with <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span> with <a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.sql.package@CachedDataFrame" title="Permalink" target="_top">
@@ -1815,7 +1815,7 @@ getOrCreate instead of the global one.
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="SnappyContext$.html"><span class="name">SnappyContext</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.Logging">Logging</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="SnappyContext$.html"><span class="name">SnappyContext</span></a><span class="result"> extends <a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.sql.package@SnappyContext" title="Permalink" target="_top">
@@ -1887,7 +1887,7 @@ getOrCreate instead of the global one.
         <span class="kind">object</span>
       </span>
       <span class="symbol">
-        <a href="SnappySession$.html"><span class="name">SnappySession</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.Logging">Logging</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="SnappySession$.html"><span class="name">SnappySession</span></a><span class="result"> extends <a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../index.html#org.apache.spark.sql.package@SnappySession" title="Permalink" target="_top">
@@ -1912,6 +1912,28 @@ getOrCreate instead of the global one.
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.SnappyStoreClientDialect" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SnappyStoreClientDialect"></a>
+      <a id="SnappyStoreClientDialect:SnappyStoreClientDialect"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyStoreClientDialect$.html"><span class="name">SnappyStoreClientDialect</span></a><span class="result"> extends <a href="SnappyDataBaseDialect.html" class="extype" name="org.apache.spark.sql.SnappyDataBaseDialect">SnappyDataBaseDialect</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.package@SnappyStoreClientDialect" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Default dialect for GemFireXD &gt;= 1.4.0.</p><div class="fullcomment"><div class="comment cmt"><p>Default dialect for GemFireXD &gt;= 1.4.0.
+Contains specific type conversions to and from Spark SQL catalyst types.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
     </li><li name="org.apache.spark.sql.SparkSession" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="SparkSession"></a>
       <a id="SparkSession:SparkSession"></a>

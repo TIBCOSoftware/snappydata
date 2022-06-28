@@ -47,7 +47,7 @@
         <span class="kind">class</span>
       </span>
       <span class="symbol">
-        <span class="name">SnappyUnifiedMemoryManager</span><span class="result"> extends <span class="extype" name="org.apache.spark.memory.UnifiedMemoryManager">UnifiedMemoryManager</span> with <span class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</span> with <a href="../sql/execution/columnar/impl/StoreCallback.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallback">StoreCallback</a></span>
+        <span class="name">SnappyUnifiedMemoryManager</span><span class="result"> extends <span class="extype" name="org.apache.spark.memory.UnifiedMemoryManager">UnifiedMemoryManager</span> with <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a> with <a href="../sql/execution/columnar/impl/StoreCallback.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallback">StoreCallback</a></span>
       </span>
       </h4>
       
@@ -60,7 +60,7 @@ If the critical and eviction events are not set, it asks the UnifiedMemoryManage
 to allocate the space.
 </p></div><dl class="attributes block"> <dt>Self Type</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a></dd></dl><div class="toggleContainer block">
           <span class="toggle">Linear Supertypes</span>
-          <div class="superTypes hiddenContent"><a href="../sql/execution/columnar/impl/StoreCallback.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallback">StoreCallback</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</span>, <span class="extype" name="org.apache.spark.memory.UnifiedMemoryManager">UnifiedMemoryManager</span>, <span class="extype" name="org.apache.spark.memory.MemoryManager">MemoryManager</span>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+          <div class="superTypes hiddenContent"><a href="../sql/execution/columnar/impl/StoreCallback.html" class="extype" name="org.apache.spark.sql.execution.columnar.impl.StoreCallback">StoreCallback</a>, <span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a>, <span class="extype" name="org.apache.spark.memory.UnifiedMemoryManager">UnifiedMemoryManager</span>, <span class="extype" name="org.apache.spark.memory.MemoryManager">MemoryManager</span>, <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
         </div></div>
         
 
@@ -225,7 +225,7 @@ to allocate the space.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → StoreUnifiedManager</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="org.apache.spark.memory.UnifiedMemoryManager#acquireUnrollMemory" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="acquireUnrollMemory(blockId:org.apache.spark.storage.BlockId,numBytes:Long,memoryMode:org.apache.spark.memory.MemoryMode):Boolean"></a>
       <a id="acquireUnrollMemory(BlockId,Long,MemoryMode):Boolean"></a>
@@ -296,7 +296,7 @@ memory and acquiring unroll memory. For instance, the memory management model in
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → StoreUnifiedManager</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#changeOffHeapOwnerToStorage" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="changeOffHeapOwnerToStorage(buffer:java.nio.ByteBuffer,allowNonAllocator:Boolean):Unit"></a>
       <a id="changeOffHeapOwnerToStorage(ByteBuffer,Boolean):Unit"></a>
@@ -313,7 +313,10 @@ memory and acquiring unroll memory. For instance, the memory management model in
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → StoreUnifiedManager</dd></dl></div>
+      <p class="shortcomment cmt">Change the off-heap owner to mark it being used for storage.</p><div class="fullcomment"><div class="comment cmt"><p>Change the off-heap owner to mark it being used for storage.
+Passing the owner as null allows moving ByteBuffers not allocated
+by <span class="extype" name="BufferAllocator">BufferAllocator</span>s to be also changed and freshly accounted.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#clear" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clear():Unit"></a>
       <a id="clear():Unit"></a>
@@ -332,7 +335,7 @@ memory and acquiring unroll memory. For instance, the memory management model in
     </span>
       <p class="shortcomment cmt">Clears the internal map
 </p><div class="fullcomment"><div class="comment cmt"><p>Clears the internal map
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → StoreUnifiedManager</dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clone():Object"></a>
       <a id="clone():AnyRef"></a>
@@ -379,7 +382,7 @@ When executor stops we will copy the existing entry in this manager to
 boot manager.
 Once executor comes back again we will again copy the boot manager entries
 to run time manager.
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → StoreUnifiedManager</dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#dropStorageMemoryForObject" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="dropStorageMemoryForObject(name:String,memoryMode:org.apache.spark.memory.MemoryMode,ignoreNumBytes:Long):Long"></a>
       <a id="dropStorageMemoryForObject(String,MemoryMode,Long):Long"></a>
@@ -396,7 +399,7 @@ to run time manager.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → StoreUnifiedManager</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="eq(x$1:AnyRef):Boolean"></a>
       <a id="eq(AnyRef):Boolean"></a>
@@ -505,7 +508,7 @@ to run time manager.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → StoreUnifiedManager</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#getExecutionPoolUsedMemory" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getExecutionPoolUsedMemory(memoryMode:org.apache.spark.memory.MemoryMode):Long"></a>
       <a id="getExecutionPoolUsedMemory(MemoryMode):Long"></a>
@@ -522,7 +525,7 @@ to run time manager.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → StoreUnifiedManager</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#getOffHeapMemory" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getOffHeapMemory(objectName:String):Long"></a>
       <a id="getOffHeapMemory(String):Long"></a>
@@ -539,7 +542,7 @@ to run time manager.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → StoreUnifiedManager</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#getStoragePoolMemoryUsed" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getStoragePoolMemoryUsed(memoryMode:org.apache.spark.memory.MemoryMode):Long"></a>
       <a id="getStoragePoolMemoryUsed(MemoryMode):Long"></a>
@@ -556,7 +559,7 @@ to run time manager.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → StoreUnifiedManager</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#getStoragePoolSize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="getStoragePoolSize(memoryMode:org.apache.spark.memory.MemoryMode):Long"></a>
       <a id="getStoragePoolSize(MemoryMode):Long"></a>
@@ -573,7 +576,7 @@ to run time manager.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → StoreUnifiedManager</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#hasOffHeap" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hasOffHeap:Boolean"></a>
       <a id="hasOffHeap:Boolean"></a>
@@ -590,7 +593,7 @@ to run time manager.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → StoreUnifiedManager</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -626,7 +629,7 @@ to run time manager.
     </span>
       <p class="shortcomment cmt">Initializes the memoryManager
 </p><div class="fullcomment"><div class="comment cmt"><p>Initializes the memoryManager
-</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → StoreUnifiedManager</dd></dl></div>
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="org.apache.spark.memory.SnappyUnifiedMemoryManager#initMemoryStats" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="initMemoryStats(stats:com.gemstone.gemfire.internal.snappy.memory.MemoryManagerStats):Unit"></a>
       <a id="initMemoryStats(MemoryManagerStats):Unit"></a>
@@ -643,7 +646,7 @@ to run time manager.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → StoreUnifiedManager</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#initializeLogIfNecessary" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="initializeLogIfNecessary(isInterpreter:Boolean,silent:Boolean):Boolean"></a>
       <a id="initializeLogIfNecessary(Boolean,Boolean):Boolean"></a>
@@ -881,7 +884,7 @@ to run time manager.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → StoreUnifiedManager</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="org.apache.spark.internal.Logging#logTrace" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="logTrace(msg:=&gt;String,throwable:Throwable):Unit"></a>
       <a id="logTrace(⇒String,Throwable):Unit"></a>
@@ -1253,7 +1256,7 @@ and then divide it by a factor of safety.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → StoreUnifiedManager</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="org.apache.spark.memory.MemoryManager#releaseUnrollMemory" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="releaseUnrollMemory(numBytes:Long,memoryMode:org.apache.spark.memory.MemoryMode):Unit"></a>
       <a id="releaseUnrollMemory(Long,MemoryMode):Unit"></a>
@@ -1307,7 +1310,7 @@ This must be set after construction due to initialization ordering constraints.
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → StoreUnifiedManager</dd></dl></div>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> → <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></dd></dl></div>
     </li><li name="org.apache.spark.memory.MemoryManager#storageMemoryUsed" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="storageMemoryUsed:Long"></a>
       <a id="storageMemoryUsed:Long"></a>
@@ -1465,7 +1468,7 @@ sun.misc.Unsafe.
             </div><div class="parent" name="java.io.Serializable">
               <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
             </div><div class="parent" name="org.apache.spark.memory.StoreUnifiedManager">
-              <h3>Inherited from <span class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</span></h3>
+              <h3>Inherited from <a href="StoreUnifiedManager.html" class="extype" name="org.apache.spark.memory.StoreUnifiedManager">StoreUnifiedManager</a></h3>
             </div><div class="parent" name="org.apache.spark.memory.UnifiedMemoryManager">
               <h3>Inherited from <span class="extype" name="org.apache.spark.memory.UnifiedMemoryManager">UnifiedMemoryManager</span></h3>
             </div><div class="parent" name="org.apache.spark.memory.MemoryManager">

@@ -947,7 +947,7 @@ This is not defined if the RDD is checkpointed locally.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getDecodedValue</span><span class="params">(<span name="decoder">decoder: <span class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</span></span>, <span name="value">value: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>, <span name="dataType">dataType: <a href="../../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="rowNum">rowNum: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Any">Any</span></span>
+        <span class="name">getDecodedValue</span><span class="params">(<span name="decoder">decoder: <a href="../../columnar/encoding/ColumnDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder">ColumnDecoder</a></span>, <span name="value">value: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>, <span name="dataType">dataType: <a href="../../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="rowNum">rowNum: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Any">Any</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.execution.oplog.impl.OpLogRdd@getDecodedValue(decoder:org.apache.spark.sql.execution.columnar.encoding.ColumnDecoder,value:Array[Byte],dataType:org.apache.spark.sql.types.DataType,rowNum:Int):Any" title="Permalink" target="_top">
@@ -1171,7 +1171,7 @@ split/bucket is present.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getUpdatedValue</span><span class="params">(<span name="currentDeltaBuffer">currentDeltaBuffer: <span class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaDecoder">ColumnDeltaDecoder</span></span>, <span name="field">field: <a href="../../../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>)</span><span class="result">: <span class="extype" name="scala.Any">Any</span></span>
+        <span class="name">getUpdatedValue</span><span class="params">(<span name="currentDeltaBuffer">currentDeltaBuffer: <a href="../../columnar/encoding/ColumnDeltaDecoder.html" class="extype" name="org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaDecoder">ColumnDeltaDecoder</a></span>, <span name="field">field: <a href="../../../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>)</span><span class="result">: <span class="extype" name="scala.Any">Any</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../../../index.html#org.apache.spark.sql.execution.oplog.impl.OpLogRdd@getUpdatedValue(currentDeltaBuffer:org.apache.spark.sql.execution.columnar.encoding.ColumnDeltaDecoder,field:org.apache.spark.sql.types.StructField):Any" title="Permalink" target="_top">
