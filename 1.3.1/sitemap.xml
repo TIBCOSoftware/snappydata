@@ -2,1812 +2,1792 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/GettingStarted/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/LICENSE/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/additional_docs/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/apidocsintro/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/aqp_aws/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/architecture/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/configuration/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/experimental/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/imp_info/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/jobs/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/kubernetes/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/new_features/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/prev_doc_ver/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/setting_up_jdbc_driver_qlikview/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/setting_up_odbc_driver/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/techsupport/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/unsupported/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/additional_files/additional_docs/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/additional_files/license_model/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/additional_files/open_source_components/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/affinity_modes/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/affinity_modes/connector_mode/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/affinity_modes/embedded_mode/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/affinity_modes/local_mode/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/architecture/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/architecture/cluster_architecture/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/architecture/core_components/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/architecture/data_ingestion_pipeline/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/architecture/hybrid_cluster_manager/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/best_practices/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/best_practices/analysing_query_performance/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/best_practices/ha_considerations/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/best_practices/important_settings/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/best_practices/memory_management/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/best_practices/odbc_jdbc_clients/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/best_practices/setup_cluster/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/best_practices/structured_streaming_best_practices/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/best_practices/transactions_best_practices/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/best_practices/design_schema/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/best_practices/design_schema/design_principles/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/best_practices/design_schema/optimizing_query_latency/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/concepts/network_partition/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/configuring_cluster/available_scripts/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/configuring_cluster/cluster_maintenance/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/configuring_cluster/configure_launch_cluster/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/configuring_cluster/configure_launch_cluster_multinode/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/configuring_cluster/configuring_cluster/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/configuring_cluster/firewalls_connections/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/configuring_cluster/properties/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/configuring_cluster/property_description/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/configuring_cluster/property_details/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/configuring_cluster/securinguiconnection/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/configuring_cluster/ssl_setup/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/connectors/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/connectors/access_cloud_data/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/connectors/cdc_connector/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/connectors/deployment_dependency_jar/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/connectors/gemfire_connector/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/connectors/jdbc_streaming_connector/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/connectors/tdv/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/consistency/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/consistency/using_snapshot_isolation_column/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/consistency/using_transactions_row/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/data/data_formats/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/data/external_hive_support/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/check_status_cluster/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/concurrent_apache_zeppelin_access_to_secure_snappydata/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/connect_jdbc_client_pool_driver/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/connect_oss_vis_client_tools/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/connect_to_the_cluster_from_external_clients/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/connect_using_jdbc_driver/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/connect_using_odbc_driver/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/connecttibcodv/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/connecttibcospotfire/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/create_column_tables_and_run_queries/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/create_row_tables_and_run_queries/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/export_hdfs/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/import_from_hive_table/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/load_data_from_external_data_stores/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/load_data_into_snappydata_tables/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/perform_a_colocated_join/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/run_spark_job_inside_cluster/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/spark_installation_using_smart_connector/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/start_snappy_cluster/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/stop_snappy_cluster/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/store_and_query_json_objects/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/store_and_query_objects/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/store_retrieve_complex_datatypes_JDBC/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/tableauconnect/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/use_apache_zeppelin_with_snappydata/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/use_python_to_create_tables_and_run_queries/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/use_snappy_shell/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/use_stream_processing_with_snappydata/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/use_synopsis_data_engine_to_run_approximate_queries/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/use_transactions_isolation_levels/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/howto/using_snappydata_for_any_spark_dist/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/install/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/install/building_from_source/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/install/install_on_premise/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/install/setting_up_cluster_on_amazon_web_services/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/install/system_requirements/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/install/upgrade/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/isight/key_components/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/isight/quick_start_steps/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/isight/the_technology_powering_isight_cloud/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/migration/migration-0.8-0.9/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/migration/migration-0.9-01_rc/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/migration/migration/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/migration/upgrade_gemfirexd_standalone/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/migration/upgrade_sqlfire_standalone/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/monitoring/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/monitoring/collect-debug-artifacts/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/monitoring/configure_high_availability/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/monitoring/configure_logging/</loc>
-         <lastmod>2022-06-12</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://tibcosoftware.github.io/snappydata/1.3.1/monitoring/log-application/</loc>
-         <lastmod>2022-06-12</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://tibcosoftware.github.io/snappydata/1.3.1/monitoring/log-format/</loc>
-         <lastmod>2022-06-12</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://tibcosoftware.github.io/snappydata/1.3.1/monitoring/log-severity/</loc>
-         <lastmod>2022-06-12</lastmod>
-         <changefreq>daily</changefreq>
-    </url>
-    <url>
-         <loc>https://tibcosoftware.github.io/snappydata/1.3.1/monitoring/logging/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/monitoring/membership-logging/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/monitoring/metrics/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/monitoring/monitor-manage/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/monitoring/monitoring/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/monitoring/recoveringdata/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/old_files/binary/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/old_files/build-instructions/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/old_files/capacity_planning/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/old_files/cluster/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/old_files/cluster_aws/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/old_files/cluster_azure/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/old_files/cluster_docker/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/old_files/clustersparkapi/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/old_files/clustersql/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/old_files/connectingToCluster/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/old_files/features/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/old_files/rowAndColumnTables/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/old_files/snappyIntroduction/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/old_files/snappyOnAWS/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/old_files/streamingWithSQL/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/programming_guide/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/programming_guide/building_snappydata_applications_using_spark_api/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/programming_guide/managing_jar_files/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/programming_guide/multiple_language_binding_using_thrift_protocol/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/programming_guide/scala_interpreter/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/programming_guide/snappydata_jobs/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/programming_guide/spark_jdbc_connector/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/programming_guide/sparksession_snappysession_and_snappystreamingcontext/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/programming_guide/stream_processing_using_sql/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/programming_guide/tables_in_snappydata/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/programming_guide/udf_and_udaf/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/programming_guide/using_jdbc_with_snappydata/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/programming_guide/using_pyspark_shell/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/programming_guide/using_snappydata_shell/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/programming_guide/using_the_spark_shell_and_spark-submit/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/programming_guide/working_with_hadoop_yarn_cluster_manager/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/quickstart/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/quickstart/getting_started_by_installing_snappydata_on-premise/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/quickstart/getting_started_on_aws/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/quickstart/getting_started_on_kubernetes/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/quickstart/getting_started_with_docker_image/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/quickstart/getting_started_with_your_spark_distribution/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/quickstart/performance_apache_spark/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/quickstart/snappydataquick_start/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/quickstart/structucture_streamingquickstart/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/quickstart/using_spark_scala_apis/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/quickstart/using_sql/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_general_limitations/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/API_Reference/apireference_guide/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/API_Reference/odbc_supported_apis/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/command_line_utilities/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/command_line_utilities/data_extractor/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/command_line_utilities/modify_disk_store/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/command_line_utilities/scala-cli/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/command_line_utilities/store-backup/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/command_line_utilities/store-compact-all-disk-stores/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/command_line_utilities/store-compact-disk-store/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/command_line_utilities/store-list-missing-disk-stores/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/command_line_utilities/store-revoke-missing-disk-stores/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/command_line_utilities/store-run/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/command_line_utilities/store-unblock-disk-stores/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/command_line_utilities/store-version/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/command_line_utilities/validate_diskstore/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/ack-severe-alert-threshold/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/ack-wait-threshold/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/allow-explicit-commit/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/archive-disk-space-limit/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/archive-file-size-limit/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/bind-address/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/enable-network-partition-detection/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/enable-stats/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/enable-time-statistics/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/enable-timestats/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/enforce-unique-host/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/gemfirexd.properties/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/hostname-for-clients/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/init-scripts/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/load-balance/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/locators/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/log-disk-space-limit/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/log-file-size-limit/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/log-file/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/log-level/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/member-timeout/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/membership-port-range/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/password/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/persist-dd/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/prefer-netserver-ipaddress/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/read-timeout/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/redundancy-zone/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/secondary-locators/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/shutdown/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/skip-constraint-checks/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/skip-listeners/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/skip-locks/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/snappy.history/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/snappydata.datadictionary.allow-startup-errors/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/snappydata.default-startup-recovery-delay/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/snappydata.max-lock-wait/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/snappydata.query-cancellation-interval/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/snappydata.query-timeout/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/snappydata.storage.tempDirectory/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/snappydata.system.home/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/socket-buffer-size/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/socket-lease-time/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/ssl/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/ssl_ciphers/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/ssl_enabled/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/ssl_protocols/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/ssl_require_auth/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/start-locator/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/statistic-archive-file/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/statistic-sample-rate/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/statistic-sampling-enabled/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/sync-commits/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/sys-disk-dir/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/tcp-port/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/configuration_parameters/user/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/inbuilt_system_procedures/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/inbuilt_system_procedures/current_user/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/inbuilt_system_procedures/current_user_ldap_groups/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/inbuilt_system_procedures/diskstore-fsync/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/inbuilt_system_procedures/dsid/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/inbuilt_system_procedures/dump-stacks/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/inbuilt_system_procedures/export_data/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/inbuilt_system_procedures/export_ddl/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/inbuilt_system_procedures/rebalance-all-buckets/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/inbuilt_system_procedures/set-trace-flag/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/inbuilt_system_procedures/set_critical_heap_percentage/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/inbuilt_system_procedures/set_eviction_heap_percentage/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/inbuilt_system_procedures/setstatstimingproc/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/inbuilt_system_procedures/sys_remove_metastore_entry/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/interactive_commands/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/interactive_commands/autocommit/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/interactive_commands/commit/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/interactive_commands/connect/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/interactive_commands/connect_client/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/interactive_commands/describe/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/interactive_commands/disconnect/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/interactive_commands/elapsedtime/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/interactive_commands/exit/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/interactive_commands/maximumdisplaywidth/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/interactive_commands/rollback/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/interactive_commands/run/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/interactive_commands/set_connection/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/interactive_commands/show/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/misc/del_supported_datatypes/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/misc/passwordless_ssh/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/misc/supported_datatypes/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_functions/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/alter-table/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/create-diskstore/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/create-external-table/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/create-function/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/create-index/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/create-sample-table/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/create-schema/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/create-statements/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/create-stream-table/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/create-synonym/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/create-table/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/create-temporary-table/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/create-view/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/delete/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/deploy/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/deploy_jar/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/deploy_package/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/drop-diskstore/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/drop-function/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/drop-index/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/drop-schema/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/drop-statements/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/drop-synonym/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/drop-table/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/exec-scala/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/explain/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/grant-all/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/grant/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/insert/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/lateral-view/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/list/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/pivot/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/put-into/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/revoke/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/revoke_all/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/select/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/set-isolation/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/set-schema/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/truncate-table/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/undeploy/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/sql_reference/update/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/system_tables/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/system_tables/members/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/system_tables/sysdiskstoreids/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/system_tables/sysdiskstores/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/system_tables/systables/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/reference/system_tables/systablestats/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/release_notes/known_issues_1.1.0/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/release_notes/release_notes/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/release_notes/release_notes_1.0-rc/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/release_notes/release_notes_1.0.1/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/release_notes/release_notes_1.0.2.1/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/release_notes/release_notes_1.0.2/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/release_notes/release_notes_1.0/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/sde/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/sde/hac_contracts/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/sde/key_concepts/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/sde/more_examples/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/sde/running_queries/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/sde/sample_selection/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/sde/sketching/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/sde/working_with_stratified_samples/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/security/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/security/authentication_connecting_to_a_secure_cluster/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/security/authorization/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/security/configuring_network_encryption_and_authentication_using_ssl/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/security/launching_the_cluster_in_secure_mode/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/security/row_level_security/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/security/specify_encrypt_passwords_conf_client/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/security/user_names_for_authentication_authorization_and_membership/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/statistics/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/statistics/collecting_system_stats/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/statistics/vsd/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/statistics/vsd/running_vsd/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/statistics/vsd/vsd-connection-stats/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/statistics/vsd/vsd_cpu/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/statistics/vsd/vsd_memory/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/statistics/vsd/vsd_statements/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/statistics/vsd/vsd_tables/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/statistics/vsd/vsd_transactions/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/troubleshooting/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/troubleshooting/catalog_inconsistency/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/troubleshooting/collect_debug_artifacts/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/troubleshooting/member_startup_problems/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/troubleshooting/oom/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/troubleshooting/preventing_disk_full_errors/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/troubleshooting/recovering_from_a_conflictingpersistentdataexception/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/troubleshooting/recovering_from_disk_full_errors/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://tibcosoftware.github.io/snappydata/1.3.1/troubleshooting/troubleshooting_error_messages/</loc>
-         <lastmod>2022-06-12</lastmod>
+         <lastmod>2022-06-28</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>
