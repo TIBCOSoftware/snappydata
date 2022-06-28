@@ -190,19 +190,21 @@ A hotfix with version `1.3.1-HF-1` was released subsequently to address late bre
 [SDSNAP-842](https://jira.tibco.com/browse/SDSNAP-842): ComputeDB failed to start due to some errors
 
 This issue is resolved after patches for the following issues were ported from Apache Geode:
-    - [GEODE-8029](https://issues.apache.org/jira/browse/GEODE-8029): IllegalArgumentException: Too large
-      (805306401 expected elements with load factor 0.75)
-    - Other Oplog fixes: [GEODE-1969](https://issues.apache.org/jira/browse/GEODE-1969),
-      [GEODE-5302](https://issues.apache.org/jira/browse/GEODE-5302),
-      [GEODE-8667](https://issues.apache.org/jira/browse/GEODE-8667),
-      [GEODE-9881](https://issues.apache.org/jira/browse/GEODE-9881),
-      [GEODE-9854](https://issues.apache.org/jira/browse/GEODE-9854)
+
+* [GEODE-8029](https://issues.apache.org/jira/browse/GEODE-8029): IllegalArgumentException: Too large
+  (805306401 expected elements with load factor 0.75)
+* Other Oplog fixes: [GEODE-1969](https://issues.apache.org/jira/browse/GEODE-1969),
+  [GEODE-5302](https://issues.apache.org/jira/browse/GEODE-5302),
+  [GEODE-8667](https://issues.apache.org/jira/browse/GEODE-8667),
+  [GEODE-9881](https://issues.apache.org/jira/browse/GEODE-9881),
+  [GEODE-9854](https://issues.apache.org/jira/browse/GEODE-9854)
 
 Only product binary has changes while rest of the artifacts are unchanged.
 
 !!!Note
-	Prefer installing the hotfix-1 release (`1.3.1-HF-1`) over the main release for main product installation
-	to obtain fixes for the issues mentioned above. There is no change to other artifacts (e.g. maven) in hotfix-1.
+	Prefer installing the hotfix-1 release (`snappydata-1.3.1-HF-1-bin.tar.gz`) over the 1.3.1 release for
+	main product installation to obtain fixes for the issues mentioned above. There is no change to other
+	artifacts (e.g. maven) in hotfix-1.
 
 
 ## Known Issues
@@ -252,8 +254,8 @@ The following table describes the download artifacts included in SnappyData 1.3.
 
 | Artifact Name                                                                                                                                                         | Description                                                                                                                                                                                                                                             |
 |-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [snappydata-1.3.1-bin.tar.gz](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.1/snappydata-1.3.1-bin.tar.gz)                                       | Full product binary (includes Hadoop 3.2.0).                                                                                                                                                                                                            |
-| [snappydata-1.3.1-HF-1-bin.tar.gz](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.1/snappydata-1.3.1-HF-1-bin.tar.gz)                             | Full product binary for hotfix-1 (includes Hadoop 3.2.0)  -  recommended.                                                                                                                                                                               |
+| [snappydata-1.3.1-HF-1-bin.tar.gz](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.1/snappydata-1.3.1-HF-1-bin.tar.gz)                             | Full product binary for 1.3.1 hotfix-1 (includes Hadoop 3.2.0) - recommended.                                                                                                                                                                           |
+| [snappydata-1.3.1-bin.tar.gz](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.1/snappydata-1.3.1-bin.tar.gz)                                       | Full product binary for 1.3.1 release (includes Hadoop 3.2.0).                                                                                                                                                                                          |
 | [snappydata-jdbc_2.11-1.3.1.jar](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.1/snappydata-jdbc_2.11-1.3.1.jar)                                 | JDBC client driver and push down JDBC data source for Spark. Compatible with Java 8, Java 11 and higher.                                                                                                                                                |
 | [snappydata-spark-connector_2.11-1.3.1.jar](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.1/snappydata-spark-connector_2.11-1.3.1.jar)           | The single jar needed in Smart Connector mode; an alternative to --packages option. Compatible with Spark versions 2.1.1, 2.1.2 and 2.1.3.                                                                                                              |
 | [snappydata-odbc_1.3.0_win64.zip](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.0/snappydata-odbc_1.3.0_win64.zip)                               | 32-bit and 64-bit ODBC client drivers from 1.3.0 release for Windows 64-bit platform.                                                                                                                                                                   |
