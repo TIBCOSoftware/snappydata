@@ -82,6 +82,17 @@ esac
 
 CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
 
+# Set PYSPARK_PYTHON as python3.7/python3.8 if available
+if [ -z "$PYSPARK_PYTHON" ]; then
+    if type python3.7 >/dev/null 2>/dev/null; then
+        PYSPARK_PYTHON=python3.7
+        export PYSPARK_PYTHON
+    elif type python3.8 >/dev/null 2>/dev/null; then
+        PYSPARK_PYTHON=python3.8
+        export PYSPARK_PYTHON
+    fi
+fi
+
 # Determine the Java command to use to start the JVM.
 if [ -n "$JAVA8_HOME" ]; then
     JAVA_HOME="$JAVA8_HOME"

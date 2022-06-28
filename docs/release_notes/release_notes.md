@@ -80,6 +80,7 @@ SnappyData 1.3.1 release includes the following new features over the previous 1
     with upstream Spark releases while the SnappyData's Spark distribution only uses Log4j 2.x.
 
 
+<a id="upgrade-from-1.3.0"></a>
 ## Upgrading from 1.3.0 and older releases
 
 Apart from the usual steps noted in the [Migration Guide](../migration/migration.md), due to the move
@@ -214,6 +215,28 @@ SnappyData 1.3.1 resolves the following major issues apart from the patches note
 * [SDSNAP-825](https://jira.tibco.com/browse/SDSNAP-825): Update can leave a dangling snapshot lock on the table
 
 
+## Hotfix-1 changes
+
+A hotfix with version `1.3.1-HF-1` was released subsequently to address late breaking issue:
+
+[SDSNAP-842](https://jira.tibco.com/browse/SDSNAP-842): ComputeDB failed to start due to some errors
+
+This issue is resolved after patches for the following issues were ported from Apache Geode:
+    - [GEODE-8029](https://issues.apache.org/jira/browse/GEODE-8029): IllegalArgumentException: Too large
+      (805306401 expected elements with load factor 0.75)
+    - Other Oplog fixes: [GEODE-1969](https://issues.apache.org/jira/browse/GEODE-1969),
+      [GEODE-5302](https://issues.apache.org/jira/browse/GEODE-5302),
+      [GEODE-8667](https://issues.apache.org/jira/browse/GEODE-8667),
+      [GEODE-9881](https://issues.apache.org/jira/browse/GEODE-9881),
+      [GEODE-9854](https://issues.apache.org/jira/browse/GEODE-9854)
+
+Only product binary has changes while rest of the artifacts are unchanged.
+
+!!!Note
+	Prefer installing the hotfix-1 release (`1.3.1-HF-1`) over the main release for main product installation
+	to obtain fixes for the issues mentioned above. There is no change to other artifacts (e.g. maven) in hotfix-1.
+
+
 ## Known Issues
 
 The known issues noted in [1.3.0 release notes](https://tibcosoftware.github.io/snappydata/1.3.0/release_notes/release_notes/#known-issues)
@@ -232,29 +255,31 @@ still apply in 1.3.1 release. These have been reproduced below for reference:
 
 ## Downloading and verifying Release Artifacts
 
-Download all the artifacts listed on the [release](https://github.com/TIBCOSoftware/snappydata/releases/tag/v1.3.1)
-page including the externally linked `snappydata-odbc_1.3.0_win64.zip` and
-`snappydata-zeppelin_2.11-0.8.2.1.jar` if required, then use the following to verify on Linux or Mac:
+Download the required artifacts listed on the [release](https://github.com/TIBCOSoftware/snappydata/releases/tag/v1.3.1)
+page, then use the following to verify on Linux or Mac:
 
 ```sh
 $ gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys A7994CE77A24E5511A68727D8CED09EB8184C4D6
 # command below should show a good signature from:
 #   SnappyData Inc. (build artifacts) <build@snappydata.io>
 $ gpg --verify snappydata-1.3.1.sha256.asc
-# command below should show OK for all the artifacts
+# command below should show OK for all the artifacts present
 $ sha256sum --check snappydata-1.3.1.sha256
 ```
 
-If you do not need some of the artifacts, then you can skip downloading them in which case the `sha256sum` command will show `FAILED open or read` error or equivalent for the missing artifacts. Alternatively you can explicitly run `sha256sum` on only the downloaded artifacts, then manually compare the values to those listed in `snappydata-1.3.1.sha256`.
+If you do not need some artifacts and skipped downloading them, the `sha256sum` command will show
+`FAILED open or read` error or equivalent for the missing artifacts. Alternatively you can explicitly run `sha256sum`
+on only the downloaded artifacts, then manually compare the values to those listed in `snappydata-1.3.1.sha256`.
 
-The following table describes the download artifacts included in SnappyData 1.3.1 release:
+The following table describes the download artifacts included in SnappyData 1.3.1 release and hotfix-1:
 
-| Artifact Name                                                                                                                                                         | Description                                                                                                                                                                                                                                                                                                                                       |
-|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| [snappydata-1.3.1-bin.tar.gz](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.1/snappydata-1.3.1-bin.tar.gz)                                       | Full product binary (includes Hadoop 3.2.0).                                                                                                                                                                                                             |
-| [snappydata-jdbc_2.11-1.3.1.jar](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.1/snappydata-jdbc_2.11-1.3.1.jar)                                | JDBC client driver and push down JDBC data source for Spark. Compatible with Java 8, Java 11 and higher.                                                                                                                                                 |
-| [snappydata-spark-connector_2.11-1.3.1.jar](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.1/snappydata-spark-connector_2.11-1.3.1.jar)          | The single jar needed in Smart Connector mode; an alternative to --packages option. Compatible with Spark versions 2.1.1, 2.1.2 and 2.1.3.                                                                                                               |
-| [snappydata-odbc_1.3.0_win64.zip](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.0/snappydata-odbc_1.3.0_win64.zip)                             | 32-bit and 64-bit ODBC client drivers from 1.3.0 release for Windows 64-bit platform.                                                                                                                                                                    |
-| [snappydata-zeppelin_2.11-0.8.2.1.jar](https://github.com/TIBCOSoftware/snappy-zeppelin-interpreter/releases/download/v0.8.2.1/snappydata-zeppelin_2.11-0.8.2.1.jar) | The Zeppelin interpreter jar for SnappyData compatible with Apache Zeppelin 0.8.2. The standard jdbc interpreter is now recommended instead of this. See [How to Use Apache Zeppelin with SnappyData](../howto/use_apache_zeppelin_with_snappydata.md).  |
-| [snappydata-1.3.1.sha256](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.1/snappydata-1.3.1.sha256)                                               | The SHA256 checksums of the product artifacts.                                                                                                                                                                                                           |
-| [snappydata-1.3.1.sha256.asc](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.1/snappydata-1.3.1.sha256.asc)                                       | PGP signature for snappydata-1.3.1.sha256 in ASCII format that can be verified using GnuPG or PGP tools.                                                                                                                                                 |
+| Artifact Name                                                                                                                                                         | Description                                                                                                                                                                                                                                             |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| [snappydata-1.3.1-bin.tar.gz](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.1/snappydata-1.3.1-bin.tar.gz)                                       | Full product binary (includes Hadoop 3.2.0).                                                                                                                                                                                                            |
+| [snappydata-1.3.1-HF-1-bin.tar.gz](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.1/snappydata-1.3.1-HF-1-bin.tar.gz)                             | Full product binary for hotfix-1 (includes Hadoop 3.2.0)  -  recommended.                                                                                                                                                                               |
+| [snappydata-jdbc_2.11-1.3.1.jar](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.1/snappydata-jdbc_2.11-1.3.1.jar)                                 | JDBC client driver and push down JDBC data source for Spark. Compatible with Java 8, Java 11 and higher.                                                                                                                                                |
+| [snappydata-spark-connector_2.11-1.3.1.jar](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.1/snappydata-spark-connector_2.11-1.3.1.jar)           | The single jar needed in Smart Connector mode; an alternative to --packages option. Compatible with Spark versions 2.1.1, 2.1.2 and 2.1.3.                                                                                                              |
+| [snappydata-odbc_1.3.0_win64.zip](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.0/snappydata-odbc_1.3.0_win64.zip)                               | 32-bit and 64-bit ODBC client drivers from 1.3.0 release for Windows 64-bit platform.                                                                                                                                                                   |
+| [snappydata-zeppelin_2.11-0.8.2.1.jar](https://github.com/TIBCOSoftware/snappy-zeppelin-interpreter/releases/download/v0.8.2.1/snappydata-zeppelin_2.11-0.8.2.1.jar)  | The Zeppelin interpreter jar for SnappyData compatible with Apache Zeppelin 0.8.2. The standard jdbc interpreter is now recommended instead of this. See [How to Use Apache Zeppelin with SnappyData](../howto/use_apache_zeppelin_with_snappydata.md). |
+| [snappydata-1.3.1.sha256](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.1/snappydata-1.3.1.sha256)                                               | The SHA256 checksums of the product artifacts.                                                                                                                                                                                                          |
+| [snappydata-1.3.1.sha256.asc](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.1/snappydata-1.3.1.sha256.asc)                                       | PGP signature for snappydata-1.3.1.sha256 in ASCII format that can be verified using GnuPG or PGP tools.                                                                                                                                                |

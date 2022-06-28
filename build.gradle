@@ -243,18 +243,21 @@ if (!hasJdbcConnectorProject) {
 }
 
 // set python2 for pyspark if python3 version is an unsupported one
-String sparkPython = 'python'
-def checkResult = exec {
-  ignoreExitValue = true
-  commandLine 'sh', '-c', 'python --version 2>/dev/null | grep -Eq "( 3\\.[0-7])|( 2\\.)"'
-}
-if (checkResult.exitValue != 0) {
-  checkResult = exec {
+String sparkPython = System.getenv('PYSPARK_PYTHON')
+if (sparkPython == null || sparkPython.isEmpty()) {
+  sparkPython = 'python'
+  def checkResult = exec {
     ignoreExitValue = true
-    commandLine 'sh', '-c', 'python2 --version >/dev/null 2>&1'
+    commandLine 'sh', '-c', 'python --version 2>/dev/null | grep -Eq "( 3\\.[0-7])|( 2\\.)"'
   }
-  if (checkResult.exitValue == 0) {
-    sparkPython = 'python2'
+  if (checkResult.exitValue != 0) {
+    checkResult = exec {
+      ignoreExitValue = true
+      commandLine 'sh', '-c', 'python2 --version >/dev/null 2>&1'
+    }
+    if (checkResult.exitValue == 0) {
+      sparkPython = 'python2'
+    }
   }
 }
 
@@ -1550,7 +1553,6 @@ task docs(type: ScalaDoc) {
             !project.name.contains('gemfire-examples') &&
             !project.name.contains('trove') &&
             !project.name.contains('kafka') &&
-            !project.name.contains('encoders') &&
             // exclude tests
             !project.name.contains('tests')) {
       allSource.addAll(project.sourceSets.main.allJava.findAll {
