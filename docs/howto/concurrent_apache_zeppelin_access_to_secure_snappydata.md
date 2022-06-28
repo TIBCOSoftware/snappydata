@@ -1,4 +1,4 @@
-<a id="howto-consurrent-zeppelin"></a>
+<a id="howto-concurrent-zeppelin"></a>
 # How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster
 
 Multiple users can concurrently access a secure SnappyData cluster by configuring the JDBC interpreter setting in Apache Zeppelin. The JDBC interpreter allows you to create a JDBC connection to a SnappyData cluster.

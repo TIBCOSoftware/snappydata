@@ -26,4 +26,10 @@ For more information see,
 	
 3. Re-install SnappyData: After you have stopped the cluster, [install the latest version of SnappyData](../install/index.md).
 
-4. Reconfigure your cluster.
+4. Reconfigure and start your cluster.
+
+
+!!! Note
+	Upgrade to SnappyData from 1.0.2 or later versions can be done directly.
+	For changes related to Log4j 2 migration in 1.3.1, please check the
+	[release notes](../install/upgrade.md#upgrade-from-1.3.0-or-older).

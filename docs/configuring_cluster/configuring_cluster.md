@@ -2,7 +2,7 @@
 
 The following items are inclulded in this section:
 
-*   [Configuring Cluster Components](#clustercompt)
+*   [Configuring Cluster Components](#configuration-files)
 *   [List of Properties](#listofproperties)
 *   [Specifying Configuration Properties using Environment Variables](#speenvi)
 *   [Configuring SnappyData Smart Connector](#configure-smart-connector)
@@ -11,7 +11,7 @@ The following items are inclulded in this section:
 *   [Firewalls and Connections](#firewall)
 
 
-<a id="clustercompt"></a>
+<a id="configuration-files"></a>
 ## Configuring Cluster Components
 
 Configuration files for locator, lead, and server should be created in the **conf** folder located in the SnappyData home directory with names **locators**, **leads**, and **servers**.
@@ -347,7 +347,7 @@ The following table lists the Spark properties you can set to configure the port
 |spark.blockManager.port |random|Port for all block managers to listen on. These exist on both the driver and the executors.|
 |spark.driver.blockManager.port  |(value of spark.blockManager.port)|Driver-specific port for the block manager to listen on, for cases where it cannot use the same configuration as executors.|
 |spark.driver.port |random	|	Port for the driver to listen on. This is used for communicating with the executors and the standalone Master.|
-|spark.port.maxRetries|16|Maximum number of retries when binding to a port before giving up. When a port is given a specific value (non 0), each subsequent retry will increment the port used in the previous attempt by 1 before retrying. This essentially allows it to try a range of ports from the start port specified to port + maxRetries.
+|spark.port.maxRetries|16|Maximum number of retries when binding to a port before giving up. When a port is given a specific value (non 0), each subsequent retry will increment the port used in the previous attempt by 1 before retrying. This essentially allows it to try a range of ports from the start port specified to port + maxRetries.|
 |spark.shuffle.service.port |7337|Port on which the external shuffle service will run.|
 |spark.ui.port |4040|	Port for your application's dashboard, which shows memory and workload data.|
 |spark.ssl.[namespace].port  |None|The port where the SSL service will listen on.</p>The port must be defined within a namespace configuration; see SSL Configuration for the available namespaces.</p> When not set, the SSL port will be derived from the non-SSL port for the same service. A value of "0" will make the service bind to an ephemeral port.|

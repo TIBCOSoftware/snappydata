@@ -4,6 +4,7 @@ This guide provides information for upgrading systems running an earlier version
 
 Before you begin the upgrade, ensure that you understand the new features and any specific requirements for that release.
 
+<a id="pre-upgrade-steps"></a>
 ## Before You Upgrade
 
 1. Confirm that your system meets the hardware and software requirements described in [System Requirements](../install/system_requirements.md) section.
@@ -18,7 +19,10 @@ Before you begin the upgrade, ensure that you understand the new features and an
 
 6. Reconfigure your cluster using the locator, lead, and server configuration files you backed up in step 1.
 
-7. To ensure that the restore script (restore.sh) copies files back to their original locations, make sure that the disk files are available at the original location before restarting the cluster with the latest version of SnappyData.
+7. To ensure that the restore script (restore.sh) copies files back to their original locations, make sure that the
+   disk files are available at the original location. Follow the relevant steps from the next two sections before
+   restarting the cluster with the latest version of SnappyData.
+
 
 ## Upgrading to SnappyData 1.3.1 from 1.0.1 or Earlier Versions
 
@@ -39,10 +43,43 @@ snappy> insert into table1 select * from table1_parquet;
 ```
 Use a path for the Parquet file that has enough space to hold the table data. Once the re-import has completed successfully, make sure that the Parquet files are deleted explicitly.
 
-!!! Note
-	Upgrade to SnappyData from 1.0.2 or later versions can be done directly.
-	For changes related to Log4j 2 migration in 1.3.1, please check the
-	[release notes](../release_notes/release_notes.md)<a id="upgrade-from-1.3.0"></a>.
+
+<a id="upgrade-from-1.3.0-or-older"></a>
+## Additional Steps for Upgrading to SnappyData 1.3.1 from 1.3.0 or Earlier Versions
+
+After performing the [pre-upgrade steps](#pre-upgrade-steps), users may need to perform one or more of the steps
+below before restarting the cluster due to the move from Log4j 1 to Log4j 2:
+
+1. If the existing installation is using a custom `log4j.properties`/`log4j.xml` configuration in **conf**
+   directory, then you will need to convert it to an equivalent `log4j2.properties`/`log4j2.xml` configuration.
+   More details can be found in the [Log4j documentation](https://logging.apache.org/log4j/2.x/manual/migration.html).
+   For convenience, a template configuration is included in the product as `conf/log4j2.properties.template`
+   which is tne equivalent of the `conf/log4j.properties.template` configuration included in previous releases
+   and is also the default configuration used by the product (apart from the default log file name).
+   Hence, if the existing configuration has been created by modifying the `conf/log4j.properties.template` file
+   from the previous release, then it will be easier to find the differences between the two and just migrate
+   those to the new `conf/log4j2.properties.template` (copied to `conf/log4j2.properties`) instead of migrating
+   the entire configuration.
+
+2. If code of a [job](../programming_guide/snappydata_jobs.md) or its dependencies is using Log4j 1,
+   then they should be migrated to use Log4j 2. It is recommended that user's job code should use SLF4J
+   for logging instead of directly using Log4j. Scala code can extend `org.apache.spark.Logging` trait
+   for convenience which provides methods like `logInfo`/`logError`/`logDebug` etc.
+
+3. If the code of a [UDF or UDAF](../programming_guide/udf_and_udaf.md) or its dependencies is using Log4j 1,
+   then they should likewise be migrated to use Log4j 2 or preferably SLF4J. Like above scala code can use
+   the `org.apache.spark.Logging` trait for convenience. Upgrading a `UDF` will need one to drop it first
+   then recreate with the new jar.
+
+4. Likewise, if a [DEPLOY JAR or PACKAGE](../reference/sql_reference/deploy.md) depends on Log4j 1,
+   then it should be migrated to use Log4j 2 or preferably SLF4J or the `org.apache.spark.Logging` trait.
+   Undeploy and deploy the updated jar/package for the change to take effect.
+
+5. In the worst case where one or more dependencies for any of the above three cases have a hard dependency on
+   Log4j 1 which cannot be changed to use Log4j 2, you can have a `log4j.properties`/`log4j.xml` packaged in
+   the jar which configures logging for only those components. The log file used must be distinct from any
+   of the others to avoid any conflicts with Log4j 2 loggers. Furthermore, Log4j 1 itself must be included
+   as a dependency in the jars directly or indirectly since the product no longer includes it.
 
 
 ## Migrating to the SnappyData ODBC Driver
@@ -52,11 +89,12 @@ SnappyData ODBC Driver alongside it without any conflicts. The product name as w
 for the two are `TIBCO ComputeDB` and `SnappyData` respectively that do not overlap with one another.
 The older drivers and their DSNs will continue to work against SnappyData 1.3.1 without any changes.
 
-While the older driver will continue to work, migrating to the new SnappyData ODBC Driver is highly recommended
-to avail the new features and bug fixes over the TIBCO ComputeDB™ ODBC Driver releases. This includes new options
-`AutoReconnect`, `CredentialManager` and `DefaultSchema`, new APIs SQLCancel/SQLCancelHandle,
-fixes to APIs like SQLPutData, SQLBindParameter, SQLGetDiagRec, SQLGetDiagField and SQLGetInfo, updated dependencies
-among others. See the [Release Notes](../release_notes/release_notes.md#odbc-changes) for more details.
+While the older driver will continue to work, migrating to the new SnappyData ODBC Driver is highly recommended in
+order to avail the new features and bug fixes over the TIBCO ComputeDB™ ODBC Driver releases. This includes new options
+`AutoReconnect`, `CredentialManager` and `DefaultSchema`, new APIs SQLCancel/SQLCancelHandle, fixes to APIs like
+SQLPutData, SQLBindParameter, SQLGetDiagRec, SQLGetDiagField and SQLGetInfo, updated dependencies among others. See the
+[Release Notes for 1.3.0](https://tibcosoftware.github.io/snappydata/1.3.0/release_notes/release_notes/#odbc-driver)
+for more details.
 
 Migration to the SnappyData ODBC Driver will involve installation from the new MSI installer
 (see [docs](../howto/connect_using_odbc_driver.md)), then creating new DSNs that have their keys and values

@@ -67,6 +67,12 @@ The following table summarizes the high-level features available in the SnappyDa
 |GemFire connector |  |
 
 
+## Upgrading from 1.3.0 or Earlier Versions
+
+Due to the move from Log4j 1 to Log4j 2, additional steps may need to be performed as noted in the
+[Upgrade Instructions](../install/upgrade.md#upgrade-from-1.3.0-or-older).
+
+
 ## New Features
 
 SnappyData 1.3.1 release includes the following new features over the previous 1.3.1 release:
@@ -78,44 +84,6 @@ SnappyData 1.3.1 release includes the following new features over the previous 1
     (where support for Log4j 2.x will land only with the 3.3.0 release), while other components were updated
     to use Log4j/SLF4J. The Spark connector component supports both Log4j 2.x and Log4j 1.x to allow compatibility
     with upstream Spark releases while the SnappyData's Spark distribution only uses Log4j 2.x.
-
-
-<a id="upgrade-from-1.3.0"></a>
-## Upgrading from 1.3.0 and older releases
-
-Apart from the usual steps noted in the [Migration Guide](../migration/migration.md), due to the move
-to Log4j 2 from Log4j 1, users may need to perform a one or more of the steps noted below:
-
-* If the existing installation is using a custom `log4j.properties`/`log4j.xml` configuration in **conf**
-  directory, then you will need to convert it to an equivalent `log4j2.properties`/`log4j2.xml` configuration.
-  More details can be found in the [Log4j documentation](https://logging.apache.org/log4j/2.x/manual/migration.html).
-  For convenience, a template configuration is included in the product as `conf/log4j2.properties.template`
-  which is tne equivalent of the `conf/log4j.properties.template` configuration included in previous releases
-  and is also the default configuration used by the product (apart from the default log file name).
-  Hence if the existing configuration has been created by modifying the `conf/log4j.properties.template` file
-  from the previous release, then it will be easier to find the differences between the two and just migrate
-  those to the new `conf/log4j2.properties.template` (copied to `conf/log4j2.properties`) instead of migrating
-  the entire configuration.
-
-* If code of a [job](../programming_guide/snappydata_jobs.md) or its dependencies is using Log4j 1,
-  then they should be migrated to use Log4j 2. It is recommended that user's job code should use SLF4J
-  for logging instead of directly using Log4j. Scala code can extend `org.apache.spark.Logging` trait
-  for convenience which provides methods like `logInfo`/`logError`/`logDebug` etc.
-
-* If the code of a [UDF or UDAF](../programming_guide/udf_and_udaf.md) or its dependencies is using Log4j 1,
-  then they should likewise be migrated to use Log4j 2 or preferably SLF4J. Like above scala code can use
-  the `org.apache.spark.Logging` trait for convenience. Upgrading a `UDF` will need one to drop it first
-  then recreate with the new jar.
-
-* Likewise, if a [DEPLOY JAR or PACKAGE](../reference/sql_reference/deploy.md) depends on Log4j 1,
-  then it should be migrated to use Log4j 2 or preferably SLF4J or the `org.apache.spark.Logging` trait.
-  Undeploy and deploy the updated jar/package for the change to take effect.
-
-* In the worst case where one or more dependencies for any of the above three cases have a hard dependency on
-  Log4j 1 which cannot be changed to use Log4j 2, you can have a `log4j.properties`/`log4j.xml` packaged in
-  the jar which configures logging for only those components. The log file used must be distinct from any
-  of the others to avoid any conflicts with Log4j 2 loggers. Furthermore, Log4j 1 itself must be included
-  as a dependency in the jars directly or indirectly since the product no longer includes it.
 
 
 ## Stability and Security Improvements
@@ -253,23 +221,32 @@ still apply in 1.3.1 release. These have been reproduced below for reference:
 | [SNAP-3298](https://jirasnappydataio.atlassian.net/browse/SNAP-3298) | Credentials set in Hadoop configuration in the Spark context can be set only once without restarting the cluster. | The credentials that are embedded in a FileSystem object. The object is cached in FileSystem cache. The cached object does not get refreshed when there is a configuration (credentials) change. Hence, it uses the initially set credentials even if you have set new credentials. | Run the `org.apache.hadoop.fs.FileSystem.closeAll()` command on `snappy-scala` shell or using `EXEC SCALA` SQL or in a job. This clears the cache. Ensure that there are no queries running on the cluster when you are executing the command. After this you can set the new credentials. |
 
 
-## Downloading and verifying Release Artifacts
+## Downloading and Verifying Release Artifacts
 
 Download the required artifacts listed on the [release](https://github.com/TIBCOSoftware/snappydata/releases/tag/v1.3.1)
-page, then use the following to verify on Linux or Mac:
+page. The instructions below use `gpg` and `sha256sum` command-line utilities. These are available on nearly all Linux
+distributions out-of-the-box, while on macOS you can install the two using [Homebrew](https://brew.sh) package manager:
 
 ```sh
-$ gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys A7994CE77A24E5511A68727D8CED09EB8184C4D6
-# command below should show a good signature from:
-#   SnappyData Inc. (build artifacts) <build@snappydata.io>
-$ gpg --verify snappydata-1.3.1.sha256.asc
-# command below should show OK for all the artifacts present
-$ sha256sum --check snappydata-1.3.1.sha256
+brew install coreutils gnupg
 ```
 
-If you do not need some artifacts and skipped downloading them, the `sha256sum` command will show
-`FAILED open or read` error or equivalent for the missing artifacts. Alternatively you can explicitly run `sha256sum`
-on only the downloaded artifacts, then manually compare the values to those listed in `snappydata-1.3.1.sha256`.
+Or if you prefer [MacPorts](https://ports.macports.org) over [Homebrew](https://brew.sh) then:
+
+```sh
+sudo port install coreutils gnupg2
+```
+
+Verify the downloaded artifacts as below assuming they are all placed in the same directory:
+
+```sh
+gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys A7994CE77A24E5511A68727D8CED09EB8184C4D6
+# command below should show a good signature from:
+#   SnappyData Inc. (build artifacts) <build@snappydata.io>
+gpg --verify snappydata-1.3.1.sha256.asc
+# command below should show OK for all the downloaded artifacts
+sha256sum --check --ignore-missing snappydata-1.3.1.sha256
+```
 
 The following table describes the download artifacts included in SnappyData 1.3.1 release and hotfix-1:
 
