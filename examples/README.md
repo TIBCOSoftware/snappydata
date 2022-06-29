@@ -36,7 +36,7 @@ Open CreateReplicatedRowTable.scala, right-click and click on `Run 'CreateReplic
 
 Similarly, you can also run the test suite (ExampleTestSuite.scala) from IDE, provided you specify path of your SnappyData installation directory as value for the environment variable `SNAPPY_HOME` in its Run Configuration.
 
-**NOTE:** The examples in StructuredStreamingCDCExample.scala and SynopsisDataExample.scala showcase enterprise features which are not available in Community Edition of SnappyData.
+**NOTE:** The examples in StructuredStreamingCDCExample.scala and SynopsisDataExample.scala showcase new OSS features which were only availble in Enterprise Editions prior to release 1.3.0 of SnappyData.
 
 ### As jobs (from console).
 

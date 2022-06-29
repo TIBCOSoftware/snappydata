@@ -296,7 +296,7 @@ The following details are shown on the **Structured Streaming** tab:
 
 | Item  | Description |
 |--------|--------|
-|**Type** | Source Type can be one of the following:</br> * FileStream</br> * Kafka</br> * Memory</br> * Socket</br> * JDBC (only available with enterprise version) |
+|**Type** | Source Type can be one of the following:</br> * FileStream</br> * Kafka</br> * Memory</br> * Socket</br> * JDBC |
 |**Description** |Description is a string representation of the source object. In general, it is a concise but informative representation. </br>For example: **KafkaSource[Subscribe[adImpressionTopic]] ** |
 |**Input Records** | Number of input records received in current trigger event. |
 |**Input Rate** | Input records per second for current trigger. |
@@ -307,7 +307,7 @@ The following details are shown on the **Structured Streaming** tab:
 | Item  | Description |
 |--------|--------|
 |**Type** | Any of the following sink type for the structured streaming queries: </br> * Snappy Store</br> * File Stream </br> * Foreach</br> * Kafka </br>|
-|**Description** | Description is a string representation of the sink object. In general, it is a concise but informative representation. For example:</br>`SnappyStoreSink[queryname -> log_stream, tablename -> aggrAdImpressions, checkpointlocation ->/home/xyz/tmp/io.snappydata.adanalytics.SnappyAPILogAggreg ator1$, sinkcallback -> org.apache.spark.sql.streaming.DefaultSnappySinkCallback]`
+|**Description** | Description is a string representation of the sink object. In general, it is a concise but informative representation. For example:</br>`SnappyStoreSink[queryname -> log_stream, tablename -> aggrAdImpressions, checkpointlocation ->/home/xyz/tmp/io.snappydata.adanalytics.SnappyAPILogAggreg ator1$, sinkcallback -> org.apache.spark.sql.streaming.DefaultSnappySinkCallback]`|
 
 ### Graphical Charts
 

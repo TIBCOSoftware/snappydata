@@ -48,7 +48,7 @@ When speed is essential, applications can selectively copy the external data int
 
 
 ## Downloading and Installing SnappyData
-You can download and install the latest version of SnappyData from [github](https://github.com/TIBCOSoftware/snappydata/releases) or you can download the enterprise version that is TIBCO ComputeDB from [here](https://edelivery.tibco.com/storefront/index.ep).
+You can download and install the latest version of SnappyData from [github](https://github.com/TIBCOSoftware/snappydata/releases).
 Refer to the [documentation](install/index.md) for installation steps.
 
 ## Getting Started

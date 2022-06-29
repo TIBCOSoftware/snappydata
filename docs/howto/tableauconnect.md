@@ -1,6 +1,6 @@
 # How to Connect Tableau to SnappyData
 
-Download and install SnappyData Enterprise edition to connect Tableau to SnappyData. You can connect Tableau using one of the following options:
+Download and install SnappyData OSS edition to connect Tableau to SnappyData. You can connect Tableau using one of the following options:
 
 *	[Thrift Server](#hivesertab) compatible with Apache HiveServer2 (HS2)
 *	[SnappyData ODBC driver](#odbcdritab)

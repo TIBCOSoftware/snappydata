@@ -258,7 +258,7 @@ object SnappyUtilLauncher extends StoreCallback {
     validateArgs(options)
   }
 
-  def printWelcomeEnterprise() {
+  def printWelcomeEnterprise(): Unit = {
     val version = GemFireVersion.getProductVersion + " " + GemFireVersion.getProductReleaseStage
     import org.apache.spark.SPARK_VERSION
     // scalastyle:off println

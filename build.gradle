@@ -39,8 +39,6 @@ apply plugin: 'distribution'
 apply plugin: 'nebula.ospackage-base'
 apply plugin: "nebula.ospackage"
 
-// def isEnterpriseProduct = rootProject.hasProperty('snappydata.enterprise')
-
 allprojects {
   // We want to see all test results.  This is equivalent to setting --continue
   // on the command line.
@@ -1103,9 +1101,7 @@ task product(type: Zip) {
       from projectDir
       into snappyProductDir
       include 'LICENSE'
-      // if (!isEnterpriseProduct) {
       include 'NOTICE'
-      // }
       include 'README.md'
     }
     copy {
@@ -1144,7 +1140,7 @@ task product(type: Zip) {
       }
     }
     if (hasAqpProject) {
-      // copy enterprise shared libraries for optimized JNI calls
+      // copy shared libraries for optimized JNI calls
       copy {
         from aqpProject.projectDir.path + '/lib'
         into "${snappyProductDir}/jars"
@@ -1313,11 +1309,7 @@ buildDeb {
 }
 
 distTar {
-  // if (isEnterpriseProduct) {
-  //   archiveName = 'TIB_compute' + devEdition + '_' + version + '_' + buildDateShort + osFamilyName + '.tar.gz'
-  // } else {
   archiveClassifier.set('bin')
-  // }
   dependsOn product
   compression = Compression.GZIP
   archiveExtension.set('tar.gz')

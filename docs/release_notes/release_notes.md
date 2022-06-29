@@ -75,7 +75,7 @@ Due to the move from Log4j 1 to Log4j 2, additional steps may need to be perform
 
 ## New Features
 
-SnappyData 1.3.1 release includes the following new features over the previous 1.3.1 release:
+SnappyData 1.3.1 release includes the following new features over the previous 1.3.0 release:
 
 * **Support for Log4j 2.x (2.17.2) which is used by default**<br/>
 
@@ -207,7 +207,7 @@ Only product binary has changes while rest of the artifacts are unchanged.
 	artifacts (e.g. maven) in hotfix-1.
 
 
-## Known Issues
+## Known Issues and Workarounds
 
 The known issues noted in [1.3.0 release notes](https://tibcosoftware.github.io/snappydata/1.3.0/release_notes/release_notes/#known-issues)
 still apply in 1.3.1 release. These have been reproduced below for reference:
