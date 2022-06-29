@@ -102,7 +102,16 @@ We monitor the following channels comments/questions:
 
 ### Using Maven Dependency
 
-SnappyData artifacts are hosted in Maven Central. You can add a Maven dependency with the following coordinates:
+SnappyData artifacts are hosted in Maven Central. You can add a Maven dependency with the following coordinates
+for core SnappyData artifacts to run the app in smart connector mode:
+
+```
+groupId: io.snappydata
+artifactId: snappydata-spark-connector_2.11
+version: 1.3.1-HF-1
+```
+
+For additions related to SnappyData cluster to write SnappyData jobs, use:
 
 ```
 groupId: io.snappydata
@@ -110,7 +119,7 @@ artifactId: snappydata-cluster_2.11
 version: 1.3.1
 ```
 
-Also add cloudera repository to the set of Maven repositories to be searched:
+Also add cloudera and atlassian repositories to the set of Maven repositories to be searched:
 
 ```xml
   <repositories>
@@ -119,22 +128,28 @@ Also add cloudera repository to the set of Maven repositories to be searched:
       <name>cloudera repo</name>
       <url>https://repository.cloudera.com/artifactory/cloudera-repos</url>
     </repository>
+    <repository>
+      <id>atlassian-repo</id>
+      <name>atlassian repo</name>
+      <url>https://packages.atlassian.com/maven-3rdparty</url>
+    </repository>
     ...
   </repositories>
 ```
 
 ### Using Gradle Dependency
 
-If you are using Gradle, add this to your **build.gradle** for core SnappyData artifacts:
+If you are using Gradle, add this to your **build.gradle** for core SnappyData artifacts
+to run the app in smart connector mode:
 
 ```groovy
 dependencies {
-  implementation 'io.snappydata:snappydata-core_2.11:1.3.1'
+  implementation 'io.snappydata:snappydata-spark-connector_2.11:1.3.1-HF-1'
   ...
 }
 ```
 
-For additions related to SnappyData cluster, use:
+For additions related to SnappyData cluster to write SnappyData jobs, use:
 
 ```groovy
 dependencies {
@@ -143,34 +158,37 @@ dependencies {
 }
 ```
 
-Also add cloudera repository to the set of Maven repositories to be searched:
+Also add cloudera and atlassian repositories to the set of Maven repositories to be searched:
 
 ```groovy
 repositories {
   mavenCentral()
   maven { url 'https://repository.cloudera.com/artifactory/cloudera-repos' }
+  maven { url 'https://packages.atlassian.com/maven-3rdparty' }
   ...
 }
 ```
 
 ### Using SBT Dependency
 
-If you are using SBT, add this line to your **build.sbt** for core SnappyData artifacts:
+If you are using SBT, add this line to your **build.sbt** for core SnappyData artifacts
+to run the app in smart connector mode:
 
 ```scala
-libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "1.3.1"
+libraryDependencies += "io.snappydata" % "snappydata-spark-connector_2.11" % "1.3.1-HF-1"
 ```
 
-For additions related to SnappyData cluster, use:
+For additions related to SnappyData cluster to write SnappyData jobs, use:
 
 ```scala
 libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.3.1"
 ```
 
-Also add cloudera repository to the set of Maven repositories to be searched:
+Also add cloudera and atlassian repositories to the set of Maven repositories to be searched:
 
 ```scala
 resolvers += "Cloudera Repo" at "https://repository.cloudera.com/artifactory/cloudera-repos"
+resolvers += "Atlassian Repo" at "https://packages.atlassian.com/maven-3rdparty"
 ```
 
 You can find more specific SnappyData artifacts [here](http://mvnrepository.com/artifact/io.snappydata)

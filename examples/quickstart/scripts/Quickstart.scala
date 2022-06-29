@@ -19,7 +19,7 @@
  * To execute this script on spark you can use below command:
  *
  * ./spark-shell --driver-memory 4g --master local[*] \
- * --packages "io.snappydata:snappydata-spark-connector_2.11:1.3.1" -i Quickstart.scala
+ * --packages "io.snappydata:snappydata-spark-connector_2.11:1.3.1-HF-1" -i Quickstart.scala
  *
  * Or you can execute this script on SnappyData's spark distribution with the same command as above
  * without requiring packages as follows:

@@ -143,6 +143,7 @@ For example, gradle can be configured as:
 repositories {
   mavenCentral()
   maven { url 'https://repository.cloudera.com/artifactory/cloudera-repos' }
+  maven { url 'https://packages.atlassian.com/maven-3rdparty' }
   ...
 }
 

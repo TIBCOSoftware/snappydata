@@ -108,23 +108,28 @@ If you do not need the cluster additions (having job support) rather only the [s
 
 ```
 groupId: io.snappydata
-artifactId: snappydata-core_2.11
+artifactId: snappydata-spark-connector_2.11
 version: 1.3.1
 ```
 
-Also add cloudera repository `https://repository.cloudera.com/artifactory/cloudera-repos` to the set of Maven repositories to be searched.
+Also add cloudera and atlassian repositories to the set of Maven repositories to be searched.
 
 Example configuration for smart connector mode:
 
 === "Maven"
 
     ```xml
-      <!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-core_2.11 -->
+      <!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-spark-connector_2.11 -->
       <repositories>
         <repository>
           <id>cloudera-repo</id>
           <name>cloudera repo</name>
           <url>https://repository.cloudera.com/artifactory/cloudera-repos</url>
+        </repository>
+        <repository>
+          <id>atlassian-repo</id>
+          <name>atlassian repo</name>
+          <url>https://packages.atlassian.com/maven-3rdparty</url>
         </repository>
         ...
       </repositories>
@@ -132,8 +137,8 @@ Example configuration for smart connector mode:
       <dependencies>
         <dependency>
           <groupId>io.snappydata</groupId>
-          <artifactId>snappydata-core_2.11</artifactId>
-          <version>1.3.1</version>
+          <artifactId>snappydata-spark-connector_2.11</artifactId>
+          <version>1.3.1-HF-1</version>
         </dependency>
         ...
       </dependencies>
@@ -142,15 +147,16 @@ Example configuration for smart connector mode:
 === "Gradle"
 
     ```groovy
-    // https://mvnrepository.com/artifact/io.snappydata/snappydata-core_2.11
+    // https://mvnrepository.com/artifact/io.snappydata/snappydata-spark-connector_2.11
     repositories {
       mavenCentral()
       maven { url 'https://repository.cloudera.com/artifactory/cloudera-repos' }
+      maven { url 'https://packages.atlassian.com/maven-3rdparty' }
       ...
     }
 
     dependencies {
-      implementation 'io.snappydata:snappydata-core_2.11:1.3.1'
+      implementation 'io.snappydata:snappydata-spark-connector_2.11:1.3.1-HF-1'
       ...
     }
     ```
@@ -158,10 +164,11 @@ Example configuration for smart connector mode:
 === "SBT"
 
     ```scala
-    // https://mvnrepository.com/artifact/io.snappydata/snappydata-core_2.11
+    // https://mvnrepository.com/artifact/io.snappydata/snappydata-spark-connector_2.11
     resolvers += "Cloudera Repo" at "https://repository.cloudera.com/artifactory/cloudera-repos"
+    resolvers += "Atlassian Repo" at "https://packages.atlassian.com/maven-3rdparty"
 
-    libraryDependencies += "io.snappydata" % "snappydata-core_2.11" % "1.3.1"
+    libraryDependencies += "io.snappydata" % "snappydata-spark-connector_2.11" % "1.3.1-HF-1"
     ```
 
 Example configuration for full cluster mode:
@@ -175,6 +182,11 @@ Example configuration for full cluster mode:
           <id>cloudera-repo</id>
           <name>cloudera repo</name>
           <url>https://repository.cloudera.com/artifactory/cloudera-repos</url>
+        </repository>
+        <repository>
+          <id>atlassian-repo</id>
+          <name>atlassian repo</name>
+          <url>https://packages.atlassian.com/maven-3rdparty</url>
         </repository>
         ...
       </repositories>
@@ -196,6 +208,7 @@ Example configuration for full cluster mode:
     repositories {
       mavenCentral()
       maven { url 'https://repository.cloudera.com/artifactory/cloudera-repos' }
+      maven { url 'https://packages.atlassian.com/maven-3rdparty' }
       ...
     }
 
@@ -210,6 +223,7 @@ Example configuration for full cluster mode:
     ```scala
     // https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
     resolvers += "Cloudera Repo" at "https://repository.cloudera.com/artifactory/cloudera-repos"
+    resolvers += "Atlassian Repo" at "https://packages.atlassian.com/maven-3rdparty"
 
     libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.3.1"
     ```

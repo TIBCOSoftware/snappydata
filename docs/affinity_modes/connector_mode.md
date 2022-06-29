@@ -78,7 +78,7 @@ You can either start SnappyData members using the `snappy_start_all` script or y
 
 ```sh
 
-./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages "io.snappydata:snappydata-spark-connector_2.11:1.3.1"
+./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages "io.snappydata:snappydata-spark-connector_2.11:1.3.1-HF-1"
 ```
 
 !!! Note
@@ -115,12 +115,12 @@ The code example for writing a Smart Connector application program is located in
 **Cluster mode**
 
 ```sh
-./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "io.snappydata:snappydata-spark-connector_2.11:1.3.1"
+./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "io.snappydata:snappydata-spark-connector_2.11:1.3.1-HF-1"
 ```
 
 **Client mode**
 ```sh
-./bin/spark-submit --deploy-mode client --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "io.snappydata:snappydata-spark-connector_2.11:1.3.1"
+./bin/spark-submit --deploy-mode client --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "io.snappydata:snappydata-spark-connector_2.11:1.3.1-HF-1"
 ```
 
 

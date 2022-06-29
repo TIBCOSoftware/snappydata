@@ -27,7 +27,8 @@ The following image illustrates the data flow for change data capture:</br>
 
 - Ensure that a JDBC source to which SnappyData CDC Connector can connect is running and available from the node where CDC connector is running.
 
-- The **snappydata-jdbc-stream-connector_<version>.jar**, which is available in the **$SNAPPY_HOME/jars** directory. </br>If you are using Maven or Gradle project to develop the streaming application, you need to publish the above jar into a local maven repository.
+- The **snappydata-jdbc-stream-connector_<version>.jar**, which is available in the **$SNAPPY_HOME/jars** directory
+  or from maven central (`io.snappydata:snappydata-jdbc-stream-connector_2.11:<version>`).
 
 ## Understanding the Program Structure
 

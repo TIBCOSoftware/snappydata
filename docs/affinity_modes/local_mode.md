@@ -31,6 +31,11 @@ You can use an IDE of your choice, and provide the below dependency to get Snapp
           <name>cloudera repo</name>
           <url>https://repository.cloudera.com/artifactory/cloudera-repos</url>
         </repository>
+        <repository>
+          <id>atlassian-repo</id>
+          <name>atlassian repo</name>
+          <url>https://packages.atlassian.com/maven-3rdparty</url>
+        </repository>
         ...
       </repositories>
 
@@ -51,6 +56,7 @@ You can use an IDE of your choice, and provide the below dependency to get Snapp
     repositories {
       mavenCentral()
       maven { url 'https://repository.cloudera.com/artifactory/cloudera-repos' }
+      maven { url 'https://packages.atlassian.com/maven-3rdparty' }
       ...
     }
 
@@ -65,6 +71,7 @@ You can use an IDE of your choice, and provide the below dependency to get Snapp
     ```scala
     // https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
     resolvers += "Cloudera Repo" at "https://repository.cloudera.com/artifactory/cloudera-repos"
+    resolvers += "Atlassian Repo" at "https://packages.atlassian.com/maven-3rdparty"
 
     libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.3.1"
     ```
@@ -77,9 +84,14 @@ For Approximate Query Engine support:
     <!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-aqp_2.11 -->
       <repositories>
         <repository>
-            <id>cloudera-repo</id>
-            <name>cloudera repo</name>
-            <url>https://repository.cloudera.com/artifactory/cloudera-repos</url>
+          <id>cloudera-repo</id>
+          <name>cloudera repo</name>
+          <url>https://repository.cloudera.com/artifactory/cloudera-repos</url>
+        </repository>
+        <repository>
+          <id>atlassian-repo</id>
+          <name>atlassian repo</name>
+          <url>https://packages.atlassian.com/maven-3rdparty</url>
         </repository>
         ...
       </repositories>
@@ -101,6 +113,7 @@ For Approximate Query Engine support:
     repositories {
       mavenCentral()
       maven { url 'https://repository.cloudera.com/artifactory/cloudera-repos' }
+      maven { url 'https://packages.atlassian.com/maven-3rdparty' }
       ...
     }
 
@@ -115,6 +128,7 @@ For Approximate Query Engine support:
     ```scala
     // https://mvnrepository.com/artifact/io.snappydata/snappydata-aqp_2.11
     resolvers += "Cloudera Repo" at "https://repository.cloudera.com/artifactory/cloudera-repos"
+    resolvers += "Atlassian Repo" at "https://packages.atlassian.com/maven-3rdparty"
 
     libraryDependencies += "io.snappydata" % "snappydata-aqp_2.11" % "1.3.1"
     ```
@@ -150,5 +164,5 @@ To start SnappyData locally, you need to create a SnappySession in your program:
 If you already have Spark 2.1.1 - 2.1.3 installed in your local machine you can directly use `--packages` option to download the SnappyData binaries.
 
 ```sh
-./bin/spark-shell --packages "io.snappydata:snappydata-spark-connector_2.11:1.3.1"
+./bin/spark-shell --packages "io.snappydata:snappydata-spark-connector_2.11:1.3.1-HF-1"
 ```

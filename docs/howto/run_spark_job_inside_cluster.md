@@ -32,6 +32,11 @@ To compile your job, use the Maven/Gradle/SBT dependencies for the latest releas
           <name>cloudera repo</name>
           <url>https://repository.cloudera.com/artifactory/cloudera-repos</url>
         </repository>
+        <repository>
+          <id>atlassian-repo</id>
+          <name>atlassian repo</name>
+          <url>https://packages.atlassian.com/maven-3rdparty</url>
+        </repository>
         ...
       </repositories>
 
@@ -52,6 +57,7 @@ To compile your job, use the Maven/Gradle/SBT dependencies for the latest releas
     repositories {
       mavenCentral()
       maven { url 'https://repository.cloudera.com/artifactory/cloudera-repos' }
+      maven { url 'https://packages.atlassian.com/maven-3rdparty' }
       ...
     }
 
@@ -66,6 +72,7 @@ To compile your job, use the Maven/Gradle/SBT dependencies for the latest releas
     ```scala
     // https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
     resolvers += "Cloudera Repo" at "https://repository.cloudera.com/artifactory/cloudera-repos"
+    resolvers += "Atlassian Repo" at "https://packages.atlassian.com/maven-3rdparty"
 
     libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.3.1"
     ```

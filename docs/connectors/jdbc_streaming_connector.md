@@ -30,7 +30,7 @@ SnappyData core and SnappyData jdbc streaming connector maven dependencies would
 </dependency>
 ```
 
-Also add cloudera repository to the set of Maven repositories to be searched:
+Also add cloudera and atlassian repositories to the set of Maven repositories to be searched:
 
 ```xml
   <repositories>
@@ -38,6 +38,11 @@ Also add cloudera repository to the set of Maven repositories to be searched:
       <id>cloudera-repo</id>
       <name>cloudera repo</name>
       <url>https://repository.cloudera.com/artifactory/cloudera-repos</url>
+    </repository>
+    <repository>
+      <id>atlassian-repo</id>
+      <name>atlassian repo</name>
+      <url>https://packages.atlassian.com/maven-3rdparty</url>
     </repository>
     ...
   </repositories>
@@ -58,7 +63,7 @@ In this quickstart since we are using spark-shell, use the following command whi
 $ <SnappyData-product-home>/bin/spark-shell --master local[*]
     --conf snappydata.connection=localhost:1527
     --packages com.microsoft.sqlserver:mssql-jdbc:6.1.0.jre8
-    --jars <SnappyData-product-home>/connectors/snappydata-jdbc-stream-connector_2.11-0.9.jar
+    --jars <SnappyData-product-home>/connectors/snappydata-jdbc-stream-connector_2.11-1.3.1-HF-1.jar
 ```
 Run the following commands to create a Stream reader for JDBC source
 
