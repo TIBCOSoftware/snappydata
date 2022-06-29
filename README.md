@@ -119,7 +119,8 @@ artifactId: snappydata-cluster_2.11
 version: 1.3.1
 ```
 
-Also add cloudera and atlassian repositories to the set of Maven repositories to be searched:
+Also add cloudera and atlassian repositories to the set of Maven repositories
+to be searched for `snappydata-cluster_2.11`:
 
 ```xml
   <repositories>
@@ -158,7 +159,8 @@ dependencies {
 }
 ```
 
-Also add cloudera and atlassian repositories to the set of Maven repositories to be searched:
+Also add cloudera and atlassian repositories to the set of Maven repositories
+to be searched for `snappydata-cluster_2.11`:
 
 ```groovy
 repositories {
@@ -184,7 +186,8 @@ For additions related to SnappyData cluster to write SnappyData jobs, use:
 libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.3.1"
 ```
 
-Also add cloudera and atlassian repositories to the set of Maven repositories to be searched:
+Also add cloudera and atlassian repositories to the set of Maven repositories
+to be searched for `snappydata-cluster_2.11`:
 
 ```scala
 resolvers += "Cloudera Repo" at "https://repository.cloudera.com/artifactory/cloudera-repos"

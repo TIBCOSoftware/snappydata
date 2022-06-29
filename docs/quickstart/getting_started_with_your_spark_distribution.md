@@ -9,7 +9,9 @@ Open a command terminal, go to the location of the Spark installation directory,
 $ cd <Spark_Install_dir>
 # Create a directory for SnappyData artifacts
 $ mkdir quickstartdatadir
-$ ./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages "io.snappydata:snappydata-spark-connector_2.11:1.3.1-HF-1"
+$ ./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir \
+    --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log \
+    --packages "io.snappydata:snappydata-spark-connector_2.11:1.3.1-HF-1"
 ```
 
 This opens the Spark shell and downloads the relevant SnappyData files to your local machine. Depending on your network connection speed, it may take some time to download the files.</br>
