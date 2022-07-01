@@ -15,7 +15,7 @@ For more information on the capabilities of the Community Edition and difference
 
 Download the [SnappyData 1.3.1 Community Edition (Open Source)](https://github.com/TIBCOSoftware/snappydata/releases/) from the release page, which lists the latest and previous releases of SnappyData. The packages are available in compressed files (.tar format).
 
-* [**SnappyData 1.3.1 Release download link**](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.1/snappydata-1.3.1-bin.tar.gz)
+* [**SnappyData 1.3.1 Hotfix-1 download link**](https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.1/snappydata-1.3.1-HF-1-bin.tar.gz)
 
 
 <a id= provisioningsnappy> </a>

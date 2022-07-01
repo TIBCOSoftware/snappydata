@@ -77,7 +77,7 @@ $ docker build -t <your-docker-repo-name>/<image_name>[:<image-tag>] . --build-a
 For example:
 
 ```sh
-$ docker build -t myrepo/snappydata . --build-arg TARFILE_LOC=https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.1/snappydata-1.3.1-bin.tar.gz
+$ docker build -t myrepo/snappydata . --build-arg TARFILE_LOC=https://github.com/TIBCOSoftware/snappydata/releases/download/v1.3.1/snappydata-1.3.1-HF-1-bin.tar.gz
 ```
 
 <a id="builddockerimageslocal"></a>
@@ -94,7 +94,7 @@ $ docker build -t <your-docker-repo-name>/<image_name>[:<image-tag>] . --build-a
 For example:
 
 ```sh
-$ docker build -t myrepo/snappydata . --build-arg TARFILE_LOC=snappydata-1.3.1-bin.tar.gz
+$ docker build -t myrepo/snappydata . --build-arg TARFILE_LOC=snappydata-1.3.1-HF-1-bin.tar.gz
 ```
 
 

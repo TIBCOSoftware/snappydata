@@ -281,12 +281,12 @@ For example, to use **SnappyData OSS** build to launch the cluster, download the
 https://github.com/TIBCOSoftware/snappydata/releases on your local machine and give its path as value to above option.
 
 ```sh
-./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem launch my-cluster --snappydata-tarball="/home/ec2-user/snappydata/distributions/snappydata-1.3.1-bin.tar.gz"
+./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem launch my-cluster --snappydata-tarball="/home/ec2-user/snappydata/distributions/snappydata-1.3.1-HF-1-bin.tar.gz"
 ```
 
 Alternatively, you can also put your build file on a public web server and provide its URL to this option.
 ```sh
-./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem launch my-cluster --snappydata-tarball="https://s3-us-east-2.amazonaws.com/mybucket/distributions/snappydata-1.3.1-bin.tar.gz"
+./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem launch my-cluster --snappydata-tarball="https://s3-us-east-2.amazonaws.com/mybucket/distributions/snappydata-1.3.1-HF-1-bin.tar.gz"
 ```
 
 The build file should be in **.tar.gz** format.

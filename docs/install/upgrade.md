@@ -64,7 +64,8 @@ below before restarting the cluster due to the move from Log4j 1 to Log4j 2:
 * If code of a [job](../programming_guide/snappydata_jobs.md) or its dependencies is using Log4j 1,
   then those should be migrated to use Log4j 2. It is recommended that user's job code should use SLF4J
   for logging instead of directly using Log4j. Scala code can extend `org.apache.spark.Logging` trait
-  for convenience which provides methods like `logInfo`/`logError`/`logDebug` etc.
+  for convenience which provides methods like `logInfo`/`logError`/`logDebug` etc (see its
+    [API docs](../apidocs/index.html#org.apache.spark.Logging)).
 
 * If the code of a [UDF or UDAF](../programming_guide/udf_and_udaf.md) or its dependencies is using Log4j 1,
   then those should likewise be migrated to use Log4j 2 or preferably SLF4J. Like above scala code can use
