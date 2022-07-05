@@ -9,19 +9,25 @@ Before you begin the upgrade, ensure that you understand the new features and an
 
 1. Confirm that your system meets the hardware and software requirements described in [System Requirements](../install/system_requirements.md) section.
 
-2. Backup the existing environment: </br>Create a backup of the locator, lead, and server configuration files that exist in the **conf** folder located in the SnappyData home directory.
+2. Backup the existing environment: </br>Create a backup of the locator, lead, and server configuration files that
+   exist in the **conf** folder located in the SnappyData home directory from where you invoke `sbin/snappy-start-all.sh`.
 
-3. Stop the cluster and verify that all members are stopped: You can shut down the cluster using the `sbin/snappy-stop-all.sh` command. </br>To ensure that all the members have been shut down correctly, use the `sbin/snappy-status-all.sh` command.
+3. Create a [backup of the operational disk store files](../reference/command_line_utilities/store-backup.md) for all
+   members in the distributed system.
 
-4. Create a [backup of the operational disk store files](../reference/command_line_utilities/store-backup.md) for all members in the distributed system.
+4. Stop the cluster and verify that all members are stopped: You can shut down the cluster using the `sbin/snappy-stop-all.sh` command. </br>To ensure that all the members have been shut down correctly, confirm using the `sbin/snappy-status-all.sh` command.
 
 5. Reinstall SnappyData: After you have stopped the cluster, [install the latest version of SnappyData](../install/index.md).
 
 6. Reconfigure your cluster using the locator, lead, and server configuration files you backed up in step 1.
 
-7. To ensure that the restore script (restore.sh) copies files back to their original locations, make sure that the
-   disk files are available at the original location. Follow the relevant steps from the next two sections before
-   restarting the cluster with the latest version of SnappyData.
+7. Follow the relevant steps from the next two sections before restarting the cluster with the latest version of
+   SnappyData as noted in the next point.
+
+8. To ensure that the restore script (restore.sh) copies files back to their original locations, make sure that the
+   disk files are available at the original location. You can first try restarting using the data directories fro
+   the previous installation itself, and only resort to using restore script if there are some data related issues
+   in the restart.
 
 
 ## Upgrading to SnappyData 1.3.1 from 1.0.1 or Earlier Versions
@@ -81,7 +87,10 @@ below before restarting the cluster due to the move from Log4j 1 to Log4j 2:
   the jar or in product **conf** directory which configures logging for only those components. The log file
   used must be distinct from any of the others and especially the product log file to avoid any conflicts with
   Log4j 2 loggers. Furthermore, Log4j 1 itself must be included in the deployed jars directly or indirectly
-  since the product no longer includes the Log4j 1 jar.
+  since the product no longer includes the Log4j 1 jar. Alternatively you can make use of the Log4j 1.x bridge
+  (log4j-1.2-api) included in the product assuming it suffices your use-case (see
+  [Log4j documentation](https://logging.apache.org/log4j/2.x/manual/migration.html)) and add the configuration
+  for those components to `log4j2.properties`/`log4j2.xml` itself in **conf** directory.
 
 
 ## Migrating to the SnappyData ODBC Driver
