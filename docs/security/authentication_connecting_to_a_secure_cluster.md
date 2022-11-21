@@ -30,7 +30,7 @@ For more information, refer [How to connect using JDBC driver](../howto/connect_
 You can also connect to the SnappyData Cluster using SnappyData ODBC Driver using the following command:
 
 ```pre
-Driver=SnappyData ODBC Driver;server=<ServerHost>;port=<ServerPort>;user=<userName>;password=<password>
+Driver=SnappyData;server=<ServerHost>;port=<ServerPort>;user=<userName>;password=<password>
 ```
 
 For more information refer to, [How to Connect using ODBC Driver](../howto/connect_using_odbc_driver.md).

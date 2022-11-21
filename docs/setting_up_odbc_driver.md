@@ -27,7 +27,7 @@ To create SnappyData DSN from ODBC Data Sources:
 
 3. Click **Add** to view the list of installed ODBC drivers on your machine.
 
-4. From the list of drivers, select **SnappyData ODBC Driver** and click **Finish**.
+4. From the list of drivers, select **SnappyData** and click **Finish**.
 
 5. The **SnappyData ODBC Configuration** dialog is displayed. </br>Enter the following details to create a DSN:
 

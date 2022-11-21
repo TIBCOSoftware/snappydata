@@ -36,10 +36,10 @@ Once you have installed the SnappyData ODBC Driver, you can connect to SnappyDat
 
 * Use the SnappyData Driver Connection URL:
 
-		Driver=SnappyData ODBC Driver;server=<ServerIP>;port=<ServerPort>;user=<userName>;password=<password>
+		Driver=SnappyData;server=<ServerIP>;port=<ServerPort>;user=<userName>;password=<password>
 
 * Create a SnappyData DSN (Data Source Name) using the installed SnappyData ODBC Driver. Refer to the Windows documentation relevant to your operating system for more information on creating a DSN. </br>
-When prompted, select the SnappyData ODBC Driver from the list of drivers and enter a Data Source name, SnappyData Server Host, Port, User Name and Password.
+When prompted, select `SnappyData` from the list of drivers and enter a Data Source name, SnappyData Server Host, Port, User Name and Password.
 Refer to the documentation for detailed information on [Setting Up SnappyData ODBC Driver](../setting_up_odbc_driver.md).
 
 ## Connecting Spotfire® Desktop to SnappyData

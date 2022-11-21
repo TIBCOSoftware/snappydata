@@ -131,12 +131,12 @@ The code example for writing a Smart Connector application program is located in
 **Cluster mode**
 ```sh
 ./spark-submit --master yarn --deploy-mode cluster \
-    --conf spark.driver.extraClassPath=/home/snappyuser/snappydata-1.3.1-bin/jars/* \
-    --conf spark.executor.extraClassPath=/home/snappyuser/snappydata-1.3.1-bin/jars/* \
+    --conf spark.driver.extraClassPath='/home/snappyuser/snappydata-1.3.1-bin/jars/*' \
+    --conf spark.executor.extraClassPath='/home/snappyuser/snappydata-1.3.1-bin/jars/*' \
     --class MainClass SampleProjectYarn.jar
 ```
 
 **Client mode**
 ```sh
-./spark-submit --master yarn --deploy-mode client --conf spark.driver.extraClassPath=/home/snappyuser/snappydata-1.3.1-bin/jars/* --conf spark.executor.extraClassPath=/home/snappyuser/snappydata-1.3.1-bin/jars/* --class MainClass SampleProjectYarn.jar
+./spark-submit --master yarn --deploy-mode client --conf spark.driver.extraClassPath='/home/snappyuser/snappydata-1.3.1-bin/jars/*' --conf spark.executor.extraClassPath='/home/snappyuser/snappydata-1.3.1-bin/jars/*' --class MainClass SampleProjectYarn.jar
 ```
